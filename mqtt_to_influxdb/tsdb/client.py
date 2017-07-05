@@ -35,7 +35,7 @@ class Client:
 				},
 				"time": int(data['timestamp'] * 1000),
 				"fields": {
-					"value": data['value'],
+					data['property']: data['value'],
 					"quality": data['quality'],
 				}
 			})

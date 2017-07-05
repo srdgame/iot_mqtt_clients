@@ -14,7 +14,7 @@ tsdb_client.connect()
 tsdb_client.create_database()
 
 data_queue = deque()
-topic_p = re.compile(r'^([^/]+)/data/([^/]+)/(.+)$')
+topic_p = re.compile(r'^([^/]+)/data/([^/]+)/([^/]+)/(.+)$')
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
 	print("Connected with result code "+str(rc))
@@ -36,6 +36,7 @@ def on_message(client, userdata, msg):
 	if msg.retain == 0:
 		data_queue.append({
 			"name": g[2],
+			"property": g[3],
 			"device": g[1],
 			"iot": g[0],
 			"timestamp": payload[0],
