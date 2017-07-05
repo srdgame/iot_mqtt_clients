@@ -1,0 +1,72 @@
+
+from __future__ import unicode_literals
+import re
+import time
+import json
+import sys
+import redis
+from collections import deque
+import paho.mqtt.client as mqtt
+
+redis_srv = "redis://localhost:6379"
+redis_cfg = redis.Redis.from_url(redis_srv+"/10")
+redis_rel = redis.Redis.from_url(redis_srv+"/11")
+redis_rtdb = redis.Redis.from_url(redis_srv+"/12")
+
+data_queue = deque()
+topic_p = re.compile(r'^([^/]+)/data/([^/]+)/(.+)$')
+topic_p2 = re.compile(r'^([^/]+)/devices$')
+# The callback for when the client receives a CONNACK response from the server.
+def on_connect(client, userdata, flags, rc):
+	print("Connected with result code "+str(rc))
+
+	# Subscribing in on_connect() means that if we lose the connection and
+	# reconnect then subscriptions will be renewed.
+	#client.subscribe("$SYS/#")
+	client.subscribe("+/data/#")
+	client.subscribe("+/devices")
+
+
+def on_disconnect(client, userdata, rc):
+	print("Disconnect with result code "+str(rc))
+
+
+# The callback for when a PUBLISH message is received from the server.
+def on_message(client, userdata, msg):
+	g = topic_p.match(msg.topic)
+	if g:
+		g = g.groups()
+		#payload = json.loads(msg.payload.decode('utf-8'))
+		if msg.retain == 0:
+			r = redis_rtdb.hmset(g[1], {
+				g[2]: msg.payload.decode('utf-8')
+			})
+			print(r)
+		return
+
+	g = topic_p2.match(msg.topic)
+	if g:
+		g = g.groups()
+		print(g[0], msg.payload)
+		dev_tree = []
+		devs = json.loads(msg.payload.decode('utf-8'))
+		for dev in devs:
+			redis_cfg.set(dev, devs[dev])
+			dev_tree.append(dev)
+
+		redis_rel.set(g[0], dev_tree)
+
+
+client = mqtt.Client()
+client.on_connect = on_connect
+client.on_disconnect = on_disconnect
+client.on_message = on_message
+
+client.connect("localhost", 1883, 60)
+
+
+# Blocking call that processes network traffic, dispatches callbacks and
+# handles reconnecting.
+# Other loop*() functions are available that give a threaded interface and a
+# manual interface.
+client.loop_forever()
