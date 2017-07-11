@@ -9,13 +9,15 @@ from collections import deque
 import paho.mqtt.client as mqtt
 
 redis_srv = "redis://localhost:6379"
+redis_sts = redis.Redis.from_url(redis_srv+"/9")
 redis_cfg = redis.Redis.from_url(redis_srv+"/10")
 redis_rel = redis.Redis.from_url(redis_srv+"/11")
 redis_rtdb = redis.Redis.from_url(redis_srv+"/12")
 
 data_queue = deque()
-topic_p = re.compile(r'^([^/]+)/data/([^/]+)/(.+)$')
-topic_p2 = re.compile(r'^([^/]+)/devices$')
+match_data = re.compile(r'^([^/]+)/data/([^/]+)/(.+)$')
+match_devices = re.compile(r'^([^/]+)/devices$')
+match_status = re.compile(r'^([^/]+)/status$')
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
 	print("Connected with result code "+str(rc))
@@ -25,6 +27,7 @@ def on_connect(client, userdata, flags, rc):
 	#client.subscribe("$SYS/#")
 	client.subscribe("+/data/#")
 	client.subscribe("+/devices")
+	client.subscribe("+/status")
 
 
 def on_disconnect(client, userdata, rc):
@@ -33,7 +36,7 @@ def on_disconnect(client, userdata, rc):
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
-	g = topic_p.match(msg.topic)
+	g = match_data.match(msg.topic)
 	if g:
 		g = g.groups()
 		#payload = json.loads(msg.payload.decode('utf-8'))
@@ -44,7 +47,7 @@ def on_message(client, userdata, msg):
 			print(r)
 		return
 
-	g = topic_p2.match(msg.topic)
+	g = match_devices.match(msg.topic)
 	if g:
 		g = g.groups()
 		print(g[0], msg.payload)
@@ -55,6 +58,13 @@ def on_message(client, userdata, msg):
 			dev_tree.append(dev)
 
 		redis_rel.set(g[0], dev_tree)
+		return
+
+	g = match_status.match(msg.topic)
+	if g:
+		g = g.groups()
+		redis_sts.set(g[0], msg.payload.decode('utf-8'))
+		return
 
 
 client = mqtt.Client()
