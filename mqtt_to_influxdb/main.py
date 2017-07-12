@@ -27,7 +27,7 @@ def on_connect(client, userdata, flags, rc):
 	#client.subscribe("$SYS/#")
 	client.subscribe("+/data/#")
 	#client.subscribe("+/devices")
-	#client.subscribe("+/status")
+	client.subscribe("+/status")
 
 
 def on_disconnect(client, userdata, rc):
@@ -64,12 +64,22 @@ def on_message(client, userdata, msg):
 	#
 	# 	#redis_rel.set(g[0], dev_tree)
 	# 	return
-	#
-	# g = match_status.match(msg.topic)
-	# if g:
-	# 	g = g.groups()
-	# 	#redis_sts.set(g[0], msg.payload.decode('utf-8'))
-	# 	return
+
+	g = match_status.match(msg.topic)
+	if g:
+		g = g.groups()
+		#redis_sts.set(g[0], msg.payload.decode('utf-8'))
+		data_queue.append({
+			"name": "device_status",
+			"property": "value",
+			"device": g[0],
+			"iot": g[0],
+			"timestamp": time.time(),
+			"value": msg.payload.decode('utf-8'),
+			"quality": 0
+		})
+		return
+
 
 client = mqtt.Client()
 client.on_connect = on_connect

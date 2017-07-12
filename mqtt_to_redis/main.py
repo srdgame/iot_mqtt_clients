@@ -54,15 +54,13 @@ def on_message(client, userdata, msg):
 	if g:
 		g = g.groups()
 		print(g[0], msg.payload)
-		dev_tree = []
+		redis_rel.ltrim(g[0], 0, -1000)
 		devs = json.loads(msg.payload.decode('utf-8'))
 		for dev in devs:
-			redis_cfg.set(dev, devs[dev])
-			dev_tree.append(dev)
+			redis_cfg.set(dev, json.dumps(devs[dev]))
+			redis_rel.lpush(g[0], dev)
 			if dev == g[0]:
-				status = device_status.get(g[0])
-				worker.update_device(g[0], devs[g[0]], status)
-		redis_rel.set(g[0], dev_tree)
+				worker.create_device(g[0], devs[g[0]])
 		return
 
 	g = match_status.match(msg.topic)

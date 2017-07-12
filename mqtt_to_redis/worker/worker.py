@@ -64,9 +64,7 @@ class CreateDevice(TaskBase):
 
 		dev = {
 			"sn": self.sn,
-			"dev_name": self.sn,
 			"props": self.props,
-			"status": "ONLINE"
 		}
 		r = session.post(api_srv + ".add_device", data=json.dumps(dev))
 		if r.status_code != 200:
@@ -86,7 +84,6 @@ class UpdateDevice(TaskBase):
 
 		dev = {
 			"sn": self.sn,
-			"dev_name": self.sn,
 			"props": self.props,
 			"status": self.status
 		}
