@@ -26,7 +26,7 @@ def on_connect(client, userdata, flags, rc):
 	# reconnect then subscriptions will be renewed.
 	#client.subscribe("$SYS/#")
 	client.subscribe("+/data/#")
-	#client.subscribe("+/devices")
+	client.subscribe("+/devices")
 	client.subscribe("+/status")
 
 
@@ -51,19 +51,21 @@ def on_message(client, userdata, msg):
 				"quality": payload[2],
 			})
 		return
-	#
-	# g = match_devices.match(msg.topic)
-	# if g:
-	# 	g = g.groups()
-	# 	print(g[0], msg.payload)
-	# 	dev_tree = []
-	# 	devs = json.loads(msg.payload.decode('utf-8'))
-	# 	for dev in devs:
-	# 		#redis_cfg.set(dev, devs[dev])
-	# 		dev_tree.append(dev)
-	#
-	# 	#redis_rel.set(g[0], dev_tree)
-	# 	return
+
+	g = match_devices.match(msg.topic)
+	if g:
+		g = g.groups()
+		print(g[0], msg.payload)
+		data_queue.append({
+			"name": "iot_device_cfg",
+			"property": "value",
+			"device": g[0],
+			"iot": g[0],
+			"timestamp": time.time(),
+			"value": msg.payload.decode('utf-8'),
+			"quality": 0
+		})
+		return
 
 	g = match_status.match(msg.topic)
 	if g:
