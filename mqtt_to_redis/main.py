@@ -20,8 +20,6 @@ match_data = re.compile(r'^([^/]+)/data/([^/]+)/(.+)$')
 match_devices = re.compile(r'^([^/]+)/devices$')
 match_status = re.compile(r'^([^/]+)/status$')
 
-worker = Worker()
-worker.start()
 device_status = {}
 
 # The callback for when the client receives a CONNACK response from the server.
@@ -76,6 +74,9 @@ def on_message(client, userdata, msg):
 		worker.update_device_status(g[0], status)
 		return
 
+
+worker = Worker()
+worker.start()
 
 client = mqtt.Client()
 client.on_connect = on_connect

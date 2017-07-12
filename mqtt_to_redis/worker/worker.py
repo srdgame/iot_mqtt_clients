@@ -33,6 +33,7 @@ class Worker(threading.Thread):
 				task.run()
 				q.task_done()
 			except queue.Empty:
+				print("This is empty Exeption!")
 				break
 
 	def stop(self):
