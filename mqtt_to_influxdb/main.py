@@ -17,6 +17,7 @@ data_queue = deque()
 match_data = re.compile(r'^([^/]+)/data/([^/]+)/([^/]+)/(.+)$')
 match_devices = re.compile(r'^([^/]+)/devices$')
 match_status = re.compile(r'^([^/]+)/status$')
+
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
 	print("Connected with result code "+str(rc))

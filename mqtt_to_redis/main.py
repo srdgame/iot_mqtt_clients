@@ -3,10 +3,11 @@ from __future__ import unicode_literals
 import re
 import time
 import json
-import sys
+import threading
 import redis
 from collections import deque
 import paho.mqtt.client as mqtt
+from worker.worker import Worker
 
 redis_srv = "redis://localhost:6379"
 redis_sts = redis.Redis.from_url(redis_srv+"/9")
@@ -18,6 +19,11 @@ data_queue = deque()
 match_data = re.compile(r'^([^/]+)/data/([^/]+)/(.+)$')
 match_devices = re.compile(r'^([^/]+)/devices$')
 match_status = re.compile(r'^([^/]+)/status$')
+
+worker = Worker()
+worker.start()
+device_status = {}
+
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
 	print("Connected with result code "+str(rc))
@@ -44,7 +50,6 @@ def on_message(client, userdata, msg):
 			r = redis_rtdb.hmset(g[1], {
 				g[2]: msg.payload.decode('utf-8')
 			})
-			print(r)
 		return
 
 	g = match_devices.match(msg.topic)
@@ -56,14 +61,19 @@ def on_message(client, userdata, msg):
 		for dev in devs:
 			redis_cfg.set(dev, devs[dev])
 			dev_tree.append(dev)
-
+			if dev == g[0]:
+				status = device_status.get(g[0])
+				worker.update_device(g[0], devs[g[0]], status)
 		redis_rel.set(g[0], dev_tree)
 		return
 
 	g = match_status.match(msg.topic)
 	if g:
 		g = g.groups()
-		redis_sts.set(g[0], msg.payload.decode('utf-8'))
+		status = msg.payload.decode('utf-8')
+		redis_sts.set(g[0], status)
+		device_status[g[0]] = status
+		worker.update_device_status(g[0], status)
 		return
 
 
