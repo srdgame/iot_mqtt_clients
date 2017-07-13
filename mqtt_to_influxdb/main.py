@@ -32,7 +32,8 @@ ddb.start()
 def get_worker(iot_device):
 	worker = device_map.get(iot_device)
 	if not worker:
-		worker = create_worker(redis_db.get(iot_device) or "example")
+		db = redis_db.get(iot_device).decode('utf-8') or "example"
+		worker = create_worker(db)
 		device_map[iot_device] = worker
 	return worker
 

@@ -42,4 +42,7 @@ class Client:
 		self._client.write_points(points, time_precision='ms')
 
 	def create_database(self):
-		self._client.create_database(self.database)
+		try:
+			self._client.create_database(self.database)
+		except Exception as ex:
+			print(ex)

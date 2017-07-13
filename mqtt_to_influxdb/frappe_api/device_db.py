@@ -1,8 +1,6 @@
 import threading
-import queue
 import time
 import requests
-import json
 import redis
 
 
@@ -54,6 +52,6 @@ class DeviceDB(threading.Thread):
 		if r.status_code != 200:
 			print(r.text)
 		db = r.json()
-		print(device, db)
+		print(time.time(), device, db)
 		return db.get("message") or "example"
 
