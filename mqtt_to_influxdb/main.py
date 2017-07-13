@@ -3,15 +3,37 @@ from __future__ import unicode_literals
 import re
 import time
 import json
-import sys
+import redis
 import paho.mqtt.client as mqtt
 from tsdb.worker import Worker
-
-worker = Worker("example")
 
 match_data = re.compile(r'^([^/]+)/data/([^/]+)/([^/]+)/(.+)$')
 match_devices = re.compile(r'^([^/]+)/devices$')
 match_status = re.compile(r'^([^/]+)/status$')
+
+redis_srv = "redis://localhost:6379"
+redis_db = redis.Redis.from_url(redis_srv+"/8")
+
+workers = {}
+device_map = {}
+
+
+def create_worker(db):
+	worker = workers.get(db)
+	if not worker:
+		worker = Worker(db)
+		worker.start()
+		workers[db] = worker
+	return worker
+
+
+def get_worker(iot_device):
+	worker = device_map.get(iot_device)
+	if not worker:
+		worker = create_worker(redis_db.get(iot_device) or "example")
+		device_map[iot_device] = worker
+	return worker
+
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
@@ -37,6 +59,7 @@ def on_message(client, userdata, msg):
 		payload = json.loads(msg.payload.decode('utf-8'))
 		#print(g[2], payload, msg.topic, msg.retain)
 		if msg.retain == 0:
+			worker = get_worker(g[0])
 			worker.append_data(name=g[2], property=g[3], device=g[1], iot=g[0], timestamp=payload[0], value=payload[1],
 							   quality=payload[2])
 		return
@@ -45,6 +68,7 @@ def on_message(client, userdata, msg):
 	if g:
 		g = g.groups()
 		print(g[0], msg.payload)
+		worker = get_worker(g[0])
 		worker.append_data(name="iot_device_cfg", property="value", device=g[0], iot=g[0], timestamp=time.time(),
 						   value=msg.payload.decode('utf-8'), quality=0)
 		return
@@ -52,6 +76,7 @@ def on_message(client, userdata, msg):
 	g = match_status.match(msg.topic)
 	if g:
 		g = g.groups()
+		worker = get_worker(g[0])
 		#redis_sts.set(g[0], msg.payload.decode('utf-8'))
 		worker.append_data(name="device_status", property="value", device=g[0], iot=g[0], timestamp=time.time(),
 						   value=msg.payload.decode('utf-8'), quality=0)
@@ -66,7 +91,6 @@ client.on_message = on_message
 client.connect("localhost", 1883, 60)
 
 
-worker.start()
 # Blocking call that processes network traffic, dispatches callbacks and
 # handles reconnecting.
 # Other loop*() functions are available that give a threaded interface and a

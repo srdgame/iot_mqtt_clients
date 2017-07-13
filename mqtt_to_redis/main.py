@@ -1,9 +1,7 @@
 
 from __future__ import unicode_literals
 import re
-import time
 import json
-import threading
 import redis
 from collections import deque
 import paho.mqtt.client as mqtt
