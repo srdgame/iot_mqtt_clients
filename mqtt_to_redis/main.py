@@ -5,7 +5,7 @@ import json
 import redis
 from collections import deque
 import paho.mqtt.client as mqtt
-from worker.worker import Worker
+from frappe_api.worker import Worker
 
 redis_srv = "redis://localhost:6379"
 redis_sts = redis.Redis.from_url(redis_srv+"/9")
