@@ -35,7 +35,7 @@ def on_message(client, userdata, msg):
 	if g:
 		g = g.groups()
 		payload = json.loads(msg.payload.decode('utf-8'))
-		print(g[2], payload, msg.topic, msg.retain)
+		#print(g[2], payload, msg.topic, msg.retain)
 		if msg.retain == 0:
 			worker.append_data(name=g[2], property=g[3], device=g[1], iot=g[0], timestamp=payload[0], value=payload[1],
 							   quality=payload[2])
