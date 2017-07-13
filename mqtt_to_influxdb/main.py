@@ -4,16 +4,11 @@ import re
 import time
 import json
 import sys
-from collections import deque
 import paho.mqtt.client as mqtt
-import tsdb.client as tsdb
+from tsdb.worker import Worker
 
+worker = Worker("example")
 
-tsdb_client = tsdb.Client()
-tsdb_client.connect()
-tsdb_client.create_database()
-
-data_queue = deque()
 match_data = re.compile(r'^([^/]+)/data/([^/]+)/([^/]+)/(.+)$')
 match_devices = re.compile(r'^([^/]+)/devices$')
 match_status = re.compile(r'^([^/]+)/status$')
@@ -40,46 +35,26 @@ def on_message(client, userdata, msg):
 	if g:
 		g = g.groups()
 		payload = json.loads(msg.payload.decode('utf-8'))
+		print(g[2], payload, msg.topic, msg.retain)
 		if msg.retain == 0:
-			data_queue.append({
-				"name": g[2],
-				"property": g[3],
-				"device": g[1],
-				"iot": g[0],
-				"timestamp": payload[0],
-				"value": payload[1],
-				"quality": payload[2],
-			})
+			worker.append_data(name=g[2], property=g[3], device=g[1], iot=g[0], timestamp=payload[0], value=payload[1],
+							   quality=payload[2])
 		return
 
 	g = match_devices.match(msg.topic)
 	if g:
 		g = g.groups()
 		print(g[0], msg.payload)
-		data_queue.append({
-			"name": "iot_device_cfg",
-			"property": "value",
-			"device": g[0],
-			"iot": g[0],
-			"timestamp": time.time(),
-			"value": msg.payload.decode('utf-8'),
-			"quality": 0
-		})
+		worker.append_data(name="iot_device_cfg", property="value", device=g[0], iot=g[0], timestamp=time.time(),
+						   value=msg.payload.decode('utf-8'), quality=0)
 		return
 
 	g = match_status.match(msg.topic)
 	if g:
 		g = g.groups()
 		#redis_sts.set(g[0], msg.payload.decode('utf-8'))
-		data_queue.append({
-			"name": "device_status",
-			"property": "value",
-			"device": g[0],
-			"iot": g[0],
-			"timestamp": time.time(),
-			"value": msg.payload.decode('utf-8'),
-			"quality": 0
-		})
+		worker.append_data(name="device_status", property="value", device=g[0], iot=g[0], timestamp=time.time(),
+						   value=msg.payload.decode('utf-8'), quality=0)
 		return
 
 
@@ -91,28 +66,10 @@ client.on_message = on_message
 client.connect("localhost", 1883, 60)
 
 
+worker.start()
 # Blocking call that processes network traffic, dispatches callbacks and
 # handles reconnecting.
 # Other loop*() functions are available that give a threaded interface and a
 # manual interface.
-#client.loop_forever()
-client.loop_start()
+client.loop_forever()
 
-while True:
-	if len(data_queue) == 0:
-		time.sleep(0.5)
-		continue
-	else:
-		try:
-			points = list(data_queue)
-			tsdb_client.write_data(points)
-			data_queue.clear()
-		except Exception as ex:
-			sys.stdout.write('+')
-			sys.stdout.flush()
-			if len(data_queue) > 100000:
-				print("Clear data queue as it is too big!")
-				data_queue.clear()
-			time.sleep(0.5)
-
-client.loop_end()
