@@ -43,8 +43,6 @@ class Worker(threading.Thread):
 					print(ex)
 					tq.queue.appendleft(points)
 
-
-
 	def append_data(self, name, property, device, iot, timestamp, value, quality):
 		self.data_queue.put({
 			"name": name,

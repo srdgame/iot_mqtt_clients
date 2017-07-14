@@ -8,6 +8,7 @@ import paho.mqtt.client as mqtt
 from tsdb.worker import Worker
 from frappe_api.device_db import DeviceDB
 
+
 match_data = re.compile(r'^([^/]+)/data/([^/]+)/([^/]+)/(.+)$')
 match_devices = re.compile(r'^([^/]+)/devices$')
 match_status = re.compile(r'^([^/]+)/status$')
@@ -17,6 +18,7 @@ redis_db = redis.Redis.from_url(redis_srv+"/8")
 
 workers = {}
 device_map = {}
+
 
 def create_worker(db):
 	worker = workers.get(db)
@@ -28,6 +30,7 @@ def create_worker(db):
 
 ddb = DeviceDB(redis_srv, device_map, create_worker)
 ddb.start()
+
 
 def get_worker(iot_device):
 	worker = device_map.get(iot_device)

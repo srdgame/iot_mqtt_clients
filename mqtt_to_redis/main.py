@@ -6,6 +6,8 @@ import redis
 from collections import deque
 import paho.mqtt.client as mqtt
 from frappe_api.worker import Worker
+from redis_client.sub import SubClient
+
 
 redis_srv = "redis://localhost:6379"
 redis_sts = redis.Redis.from_url(redis_srv+"/9")
@@ -19,6 +21,7 @@ match_devices = re.compile(r'^([^/]+)/devices$')
 match_status = re.compile(r'^([^/]+)/status$')
 
 device_status = {}
+
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
@@ -73,6 +76,8 @@ def on_message(client, userdata, msg):
 
 worker = Worker()
 worker.start()
+sub = SubClient(redis_srv)
+sub.start()
 
 client = mqtt.Client()
 client.on_connect = on_connect
