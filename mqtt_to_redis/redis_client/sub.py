@@ -5,15 +5,15 @@ import re
 import paho.mqtt.client as mqtt
 
 
-match_result = re.compile(r'^([^/]+)/([^/]+)/result')
+match_result = re.compile(r'^([^/]+)/result/([^/]+)')
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
 	print("Connected with result code "+str(rc))
-	client.subscribe("+/app/result")
-	client.subscribe("+/sys/result")
-	client.subscribe("+/output/result")
-	client.subscribe("+/command/result")
+	client.subscribe("+/result/app")
+	client.subscribe("+/result/sys")
+	client.subscribe("+/result/output")
+	client.subscribe("+/result/command")
 
 
 def on_disconnect(client, userdata, rc):
@@ -77,6 +77,9 @@ class SubClient(threading.Thread):
 
 	def on_redis_message(self, channel, str):
 		try:
+			'''
+			Forward redis publish message to mqtt broker
+			'''
 			print('redis_message', channel, str)
 			request = json.loads(str)
 			topic = request['device'] + "/" + channel[7:]
@@ -89,6 +92,9 @@ class SubClient(threading.Thread):
 
 	def on_mqtt_message(self, dev, action, str):
 		try:
+			'''
+			Forward mqtt publish action result to redis
+			'''
 			print('mqtt_message', dev, action, str)
 			result = json.loads(str)
 			if not result.get('device'):
