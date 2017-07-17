@@ -89,7 +89,11 @@ class SubClient(threading.Thread):
 			if request.get('topic'):
 				topic = topic + "/" + request['topic']
 				request.pop('topic')
-			r = self.mqttc.publish(topic=topic, payload=json.dumps(request), qos=1, retain=False)
+			if request.get('payload'):
+				request = request.get('payload')
+			else:
+				request = json.dumps(request)
+			r = self.mqttc.publish(topic=topic, payload=request, qos=1, retain=False)
 			print(r)
 		except Exception as ex:
 			print(ex)
