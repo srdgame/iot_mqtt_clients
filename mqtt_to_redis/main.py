@@ -74,11 +74,14 @@ def on_message(client, userdata, msg):
 		return
 
 
+# Frappe HTTP API Worker for async call
 worker = Worker()
 worker.start()
+# Redis MQTT message broker
 sub = SubClient(redis_srv)
 sub.start()
 
+# Listen on MQTT forwarding real-time data into redis, and forwarding configuration to frappe.
 client = mqtt.Client()
 client.on_connect = on_connect
 client.on_disconnect = on_disconnect

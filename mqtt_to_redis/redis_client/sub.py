@@ -1,3 +1,6 @@
+'''
+Publish/Subscribe message broker between Redis and MQTT
+'''
 import threading
 import redis
 import json
@@ -85,7 +88,8 @@ class SubClient(threading.Thread):
 			topic = request['device'] + "/" + channel[7:]
 			if request.get('topic'):
 				topic = topic + "/" + request['topic']
-			r = self.mqttc.publish(topic=topic, payload=str, qos=1, retain=False)
+				request.pop('topic')
+			r = self.mqttc.publish(topic=topic, payload=json.dumps(request), qos=1, retain=False)
 			print(r)
 		except Exception as ex:
 			print(ex)
