@@ -24,7 +24,7 @@ class DeviceDB(threading.Thread):
 		# session.auth = (username, passwd)
 		init_request_headers(session.headers)
 		self.session = session
-		self.redis_db = redis.Redis.from_url(redis_srv + "/8")
+		self.redis_db = redis.Redis.from_url(redis_srv)
 
 	def run(self):
 		device_map = self.device_map

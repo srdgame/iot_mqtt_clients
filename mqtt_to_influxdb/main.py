@@ -13,8 +13,8 @@ match_data = re.compile(r'^([^/]+)/data/([^/]+)/([^/]+)/(.+)$')
 match_devices = re.compile(r'^([^/]+)/devices$')
 match_status = re.compile(r'^([^/]+)/status$')
 
-redis_srv = "redis://localhost:6379"
-redis_db = redis.Redis.from_url(redis_srv+"/8")
+redis_srv = "redis://localhost:6379/8"
+redis_db = redis.Redis.from_url(redis_srv)
 
 workers = {}
 device_map = {}
@@ -39,6 +39,44 @@ def get_worker(iot_device):
 		worker = create_worker(db)
 		device_map[iot_device] = worker
 	return worker
+
+
+def get_input_type(val):
+	if isinstance(val, int):
+		return "int", val
+	elif isinstance(val, float):
+		return "float", val
+	else:
+		return "string", str(val)
+
+
+inputs_map = {}
+
+
+def get_input_vt(iot_device, device, input, val):
+	t, val = get_input_type(val)
+	if t == "string":
+		return "string", val
+
+	key = iot_device + "/" + device + "/" + input
+	vt = inputs_map.get(key)
+
+	if vt:
+		return vt, int(val)
+
+	return "float", float(val)
+
+
+def make_input_map(iot_device, cfg):
+	for dev in cfg:
+		inputs = cfg[dev].get("inputs")
+		if not inputs:
+			return
+		for it in inputs:
+			vt = it.get("vt")
+			if vt:
+				key = iot_device + "/" + dev + "/" + it.get("name")
+				inputs_map[key] = vt
 
 
 # The callback for when the client receives a CONNACK response from the server.
@@ -66,8 +104,15 @@ def on_message(client, userdata, msg):
 		#print(g[2], payload, msg.topic, msg.retain)
 		if msg.retain == 0:
 			worker = get_worker(g[0])
-			worker.append_data(name=g[2], property=g[3], device=g[1], iot=g[0], timestamp=payload[0], value=payload[1],
-							   quality=payload[2])
+			prop = g[3]
+			value=payload[1]
+			if prop == "value":
+				t, val = get_input_vt(g[0], g[1], g[2], value)
+				prop = t + "_" + prop
+				value = val
+			else:
+				value = str(value)
+			worker.append_data(name=g[2], property=prop, device=g[1], iot=g[0], timestamp=payload[0], value=value, quality=payload[2])
 		return
 
 	g = match_devices.match(msg.topic)
@@ -75,8 +120,9 @@ def on_message(client, userdata, msg):
 		g = g.groups()
 		print(g[0], msg.payload)
 		worker = get_worker(g[0])
-		worker.append_data(name="iot_device_cfg", property="value", device=g[0], iot=g[0], timestamp=time.time(),
-						   value=msg.payload.decode('utf-8'), quality=0)
+		worker.append_data(name="iot_device", property="cfg", device=g[0], iot=g[0], timestamp=time.time(),
+							value=msg.payload.decode('utf-8'), quality=0)
+		make_input_map(g[0], json.loads(msg.payload.decode('utf-8')))
 		return
 
 	g = match_status.match(msg.topic)
@@ -84,8 +130,11 @@ def on_message(client, userdata, msg):
 		g = g.groups()
 		worker = get_worker(g[0])
 		#redis_sts.set(g[0], msg.payload.decode('utf-8'))
-		worker.append_data(name="device_status", property="value", device=g[0], iot=g[0], timestamp=time.time(),
-						   value=msg.payload.decode('utf-8'), quality=0)
+		status = msg.payload.decode('utf-8')
+		if status == "ONLINE" or status == "OFFLINE":
+			val = status == "ONLINE"
+			worker.append_data(name="device_status", property="online", device=g[0], iot=g[0], timestamp=time.time(),
+								value=val, quality=0)
 		return
 
 

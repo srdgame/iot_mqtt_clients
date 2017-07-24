@@ -40,7 +40,7 @@ class Worker(threading.Thread):
 					client.write_data(points)
 					tq.task_done()
 				except Exception as ex:
-					print(ex)
+					print("Exception", ex)
 					tq.queue.appendleft(points)
 
 	def append_data(self, name, property, device, iot, timestamp, value, quality):
