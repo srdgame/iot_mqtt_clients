@@ -64,7 +64,7 @@ def get_input_vt(iot_device, device, input, val):
 	if vt:
 		return vt, int(val)
 
-	return "float", float(val)
+	return None, float(val)
 
 
 def make_input_map(iot_device, cfg):
@@ -108,7 +108,8 @@ def on_message(client, userdata, msg):
 			value=payload[1]
 			if prop == "value":
 				t, val = get_input_vt(g[0], g[1], g[2], value)
-				prop = t + "_" + prop
+				if t:
+					prop = t + "_" + prop
 				value = val
 			else:
 				value = str(value)
