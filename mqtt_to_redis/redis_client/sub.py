@@ -33,7 +33,7 @@ def on_message(client, userdata, msg):
 		userdata.on_mqtt_message(dev, action, msg.payload.decode('utf-8'))
 
 
-class MqttClient(threading.Thread):
+class MQTTClient(threading.Thread):
 	def __init__(self, client, host="localhost", port=1883, keepalive=60):
 		threading.Thread.__init__(self)
 		self.client = client
@@ -64,7 +64,7 @@ class SubClient(threading.Thread):
 		self.srv = srv
 
 	def run(self):
-		mqttc = MqttClient(self)
+		mqttc = MQTTClient(self)
 		mqttc.start()
 		self.mqttc = mqttc
 
