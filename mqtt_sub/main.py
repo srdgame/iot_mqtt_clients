@@ -1,15 +1,11 @@
 
 from __future__ import unicode_literals
-import re
-import json
-import redis
-from collections import deque
 import paho.mqtt.client as mqtt
 
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
-	print("Main MQTT Connected with result code "+str(rc))
+	print("Main MQTT Connected with result code " + str(rc))
 
 	# Subscribing in on_connect() means that if we lose the connection and
 	# reconnect then subscriptions will be renewed.
@@ -18,7 +14,7 @@ def on_connect(client, userdata, flags, rc):
 
 
 def on_disconnect(client, userdata, rc):
-	print("Main MQTT Disconnect with result code "+str(rc))
+	print("Main MQTT Disconnect with result code " + str(rc))
 
 
 # The callback for when a PUBLISH message is received from the server.
