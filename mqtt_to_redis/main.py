@@ -25,7 +25,7 @@ device_status = {}
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
-	print("Connected with result code "+str(rc))
+	print("Main MQTT Connected with result code "+str(rc))
 
 	# Subscribing in on_connect() means that if we lose the connection and
 	# reconnect then subscriptions will be renewed.
@@ -36,7 +36,7 @@ def on_connect(client, userdata, flags, rc):
 
 
 def on_disconnect(client, userdata, rc):
-	print("Disconnect with result code "+str(rc))
+	print("Main MQTT Disconnect with result code "+str(rc))
 
 
 # The callback for when a PUBLISH message is received from the server.
@@ -82,7 +82,8 @@ sub = SubClient(redis_srv)
 sub.start()
 
 # Listen on MQTT forwarding real-time data into redis, and forwarding configuration to frappe.
-client = mqtt.Client()
+client = mqtt.Client(client_id="SYS_MQTT_TO_REDIS")
+client.username_pw_set("root", "root")
 client.on_connect = on_connect
 client.on_disconnect = on_disconnect
 client.on_message = on_message

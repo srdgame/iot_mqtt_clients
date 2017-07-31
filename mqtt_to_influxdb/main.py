@@ -139,7 +139,8 @@ def on_message(client, userdata, msg):
 		return
 
 
-client = mqtt.Client()
+client = mqtt.Client(client_id="SYS_MQTT_TO_INFLUXDB")
+client.username_pw_set("root", "root")
 client.on_connect = on_connect
 client.on_disconnect = on_disconnect
 client.on_message = on_message

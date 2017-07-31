@@ -12,7 +12,7 @@ match_result = re.compile(r'^([^/]+)/result/([^/]+)')
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
-	print("Connected with result code "+str(rc))
+	print("Sub MQTT Connected with result code "+str(rc))
 	client.subscribe("+/result/app")
 	client.subscribe("+/result/sys")
 	client.subscribe("+/result/output")
@@ -20,7 +20,7 @@ def on_connect(client, userdata, flags, rc):
 
 
 def on_disconnect(client, userdata, rc):
-	print("Disconnect with result code "+str(rc))
+	print("Sub MQTT Disconnect with result code "+str(rc))
 
 
 # The callback for when a PUBLISH message is received from the server.
@@ -42,7 +42,8 @@ class MQTTClient(threading.Thread):
 		self.keepalive = keepalive
 
 	def run(self):
-		mqttc = mqtt.Client(userdata=self.client)
+		mqttc = mqtt.Client(userdata=self.client, client_id="SYS_MQTT_TO_REDIS.SUB")
+		mqttc.username_pw_set("root", "root")
 		self.mqttc = mqttc
 
 		mqttc.on_connect = on_connect
@@ -51,8 +52,7 @@ class MQTTClient(threading.Thread):
 
 		mqttc.connect(self.host, self.port, self.keepalive)
 
-		while True:
-			mqttc.loop()
+		mqttc.loop_forever()
 
 	def publish(self, *args, **kwargs):
 		return self.mqttc.publish(*args, **kwargs)
@@ -94,7 +94,7 @@ class SubClient(threading.Thread):
 			else:
 				request = json.dumps(request)
 			r = self.mqttc.publish(topic=topic, payload=request, qos=1, retain=False)
-			print(r)
+			print("Sub MQTT publish result: ", r)
 		except Exception as ex:
 			print(ex)
 
@@ -108,7 +108,7 @@ class SubClient(threading.Thread):
 			if not result.get('device'):
 				result['device'] = dev
 			r = self.redis_client.publish("device_" + action + "_result", json.dumps(result))
-			print(r)
+			print("Sub Redis publish result: ", r)
 			if result.get('id'):
 				r = self.redis_client.set(result['id'], json.dumps(result), 600)
 				print(r)
