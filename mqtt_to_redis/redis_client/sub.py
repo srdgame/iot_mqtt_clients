@@ -43,7 +43,7 @@ class MQTTClient(threading.Thread):
 
 	def run(self):
 		mqttc = mqtt.Client(userdata=self.client, client_id="SYS_MQTT_TO_REDIS.SUB")
-		mqttc.username_pw_set("root", "root")
+		mqttc.username_pw_set("root", "bXF0dF9pb3RfYWRtaW4K")
 		self.mqttc = mqttc
 
 		mqttc.on_connect = on_connect

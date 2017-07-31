@@ -83,7 +83,7 @@ sub.start()
 
 # Listen on MQTT forwarding real-time data into redis, and forwarding configuration to frappe.
 client = mqtt.Client(client_id="SYS_MQTT_TO_REDIS")
-client.username_pw_set("root", "root")
+client.username_pw_set("root", "bXF0dF9pb3RfYWRtaW4K")
 client.on_connect = on_connect
 client.on_disconnect = on_disconnect
 client.on_message = on_message
