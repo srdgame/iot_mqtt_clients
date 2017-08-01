@@ -1,6 +1,13 @@
 
 from __future__ import unicode_literals
+import re
+import base64
+import json
+import binascii
 import paho.mqtt.client as mqtt
+
+
+match_comm = re.compile(r'^([^/]+)/comm/([^/]+)/(.+)$')
 
 
 # The callback for when the client receives a CONNACK response from the server.
@@ -19,7 +26,15 @@ def on_disconnect(client, userdata, rc):
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
+	g = match_comm.match(msg.topic)
+	if g:
+		comm = json.loads(msg.payload.decode('utf-8'))
+		raw = base64.b64decode(comm[1])
+		print(msg.topic, comm[0], binascii.b2a_hex(raw))
+		return
+
 	print(msg.topic, msg.payload.decode('utf-8')) #, msg.qos, msg.retain)
+
 
 # Listen on MQTT forwarding real-time data into redis, and forwarding configuration to frappe.
 client = mqtt.Client(client_id="SYS_MQTT_SUB_CLIENT")
