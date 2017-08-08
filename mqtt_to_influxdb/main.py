@@ -9,9 +9,8 @@ from tsdb.worker import Worker
 from frappe_api.device_db import DeviceDB
 
 
-match_data = re.compile(r'^([^/]+)/data/([^/]+)/([^/]+)/(.+)$')
-match_devices = re.compile(r'^([^/]+)/devices$')
-match_status = re.compile(r'^([^/]+)/status$')
+match_topic = re.compile(r'^([^/]+)/(.+)$')
+match_data_path = re.compile(r'^([^/]+)/([^/]+)/(.+)$')
 
 redis_srv = "redis://localhost:6379/8"
 redis_db = redis.Redis.from_url(redis_srv)
@@ -86,7 +85,7 @@ def on_connect(client, userdata, flags, rc):
 	# Subscribing in on_connect() means that if we lose the connection and
 	# reconnect then subscriptions will be renewed.
 	#client.subscribe("$SYS/#")
-	client.subscribe("+/data/#")
+	client.subscribe("+/data")
 	client.subscribe("+/devices")
 	client.subscribe("+/status")
 
@@ -97,44 +96,49 @@ def on_disconnect(client, userdata, rc):
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
-	g = match_data.match(msg.topic)
-	if g:
-		g = g.groups()
+	g = match_topic.match(msg.topic)
+	if not g:
+		return
+	g = g.groups()
+	if len(g) < 2:
+		return
+
+	devid = g[0]
+	topic = g[1]
+
+	if topic == 'data':
 		payload = json.loads(msg.payload.decode('utf-8'))
-		#print(g[2], payload, msg.topic, msg.retain)
-		if msg.retain == 0:
-			worker = get_worker(g[0])
-			prop = g[3]
-			value=payload[1]
+		g = match_data_path.match(payload[0])
+		if g and msg.retain == 0:
+			g = g.groups()
+			worker = get_worker(devid)
+			prop = g[2]
+			value=payload[2]
 			if prop == "value":
-				t, val = get_input_vt(g[0], g[1], g[2], value)
+				t, val = get_input_vt(devid, g[0], g[1], value)
 				if t:
 					prop = t + "_" + prop
 				value = val
 			else:
 				value = str(value)
-			worker.append_data(name=g[2], property=prop, device=g[1], iot=g[0], timestamp=payload[0], value=value, quality=payload[2])
+			worker.append_data(name=g[1], property=prop, device=g[0], iot=devid, timestamp=payload[1], value=value, quality=payload[3])
 		return
 
-	g = match_devices.match(msg.topic)
-	if g:
-		g = g.groups()
-		print(g[0], msg.payload)
-		worker = get_worker(g[0])
-		worker.append_data(name="iot_device", property="cfg", device=g[0], iot=g[0], timestamp=time.time(),
+	if topic == 'devices':
+		print(devid, msg.payload)
+		worker = get_worker(devid)
+		worker.append_data(name="iot_device", property="cfg", device=devid, iot=devid, timestamp=time.time(),
 							value=msg.payload.decode('utf-8'), quality=0)
-		make_input_map(g[0], json.loads(msg.payload.decode('utf-8')))
+		make_input_map(devid, json.loads(msg.payload.decode('utf-8')))
 		return
 
-	g = match_status.match(msg.topic)
-	if g:
-		g = g.groups()
-		worker = get_worker(g[0])
-		#redis_sts.set(g[0], msg.payload.decode('utf-8'))
+	if topic == 'status':
+		worker = get_worker(devid)
+		#redis_sts.set(devid, msg.payload.decode('utf-8'))
 		status = msg.payload.decode('utf-8')
 		if status == "ONLINE" or status == "OFFLINE":
 			val = status == "ONLINE"
-			worker.append_data(name="device_status", property="online", device=g[0], iot=g[0], timestamp=time.time(),
+			worker.append_data(name="device_status", property="online", device=devid, iot=devid, timestamp=time.time(),
 								value=val, quality=0)
 		return
 

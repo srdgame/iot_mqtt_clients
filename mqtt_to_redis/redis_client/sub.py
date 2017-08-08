@@ -13,10 +13,7 @@ match_result = re.compile(r'^([^/]+)/result/([^/]+)')
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
 	print("Sub MQTT Connected with result code "+str(rc))
-	client.subscribe("+/result/app")
-	client.subscribe("+/result/sys")
-	client.subscribe("+/result/output")
-	client.subscribe("+/result/command")
+	client.subscribe("+/result/#")
 
 
 def on_disconnect(client, userdata, rc):
