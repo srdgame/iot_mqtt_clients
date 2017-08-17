@@ -40,7 +40,6 @@ class DeviceDB(threading.Thread):
 
 			except Exception as ex:
 				print(ex)
-				break
 
 			time.sleep(30)
 
