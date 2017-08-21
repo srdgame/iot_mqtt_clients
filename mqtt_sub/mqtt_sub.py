@@ -27,14 +27,17 @@ def on_disconnect(client, userdata, rc):
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
-	g = match_comm.match(msg.topic)
-	if g:
-		comm = json.loads(msg.payload.decode('utf-8'))
-		raw = base64.b64decode(comm[2])
-		print(comm[0], comm[1], binascii.b2a_hex(raw))
-		return
-
-	print(msg.topic, msg.payload.decode('utf-8')) #, msg.qos, msg.retain)
+	try:
+		data = json.loads(msg.payload.decode('utf-8'))
+		g = match_comm.match(msg.topic)
+		if g:
+			raw = base64.b64decode(data[2])
+			print(data[0], data[1], binascii.b2a_hex(raw))
+			return
+		print(msg.topic, data)
+	except Exception as ex:
+		print(ex)
+		print(msg.topic, msg.payload.decode('utf-8')) #, msg.qos, msg.retain)
 
 
 def on_subscribe(client, userdata, mid, granted_qos):
