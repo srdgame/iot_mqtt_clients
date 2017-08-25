@@ -7,7 +7,7 @@ from configparser import ConfigParser
 
 config = ConfigParser()
 config.read('../config.ini')
-api_srv = 'http://' + config.get('frappe', 'host', fallback='127.0.0.1') + "/api/method/iot.hdb_api"
+api_srv = config.get('frappe', 'url', fallback='http://127.0.0.1:8000') + "/api/method/iot.hdb_api"
 
 def init_request_headers(headers):
 	headers['HDB-AuthorizationCode'] = '12312313aaa'

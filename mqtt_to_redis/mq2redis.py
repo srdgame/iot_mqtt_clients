@@ -12,8 +12,7 @@ from redis_client.sub import SubClient
 config = ConfigParser()
 config.read('../config.ini')
 
-
-redis_srv = "redis://" + config.get('redis', 'host', fallback='127.0.0.1:6379')
+redis_srv = config.get('redis', 'url', fallback='redis://127.0.0.1:6379')
 redis_sts = redis.Redis.from_url(redis_srv+"/9")
 redis_cfg = redis.Redis.from_url(redis_srv+"/10")
 redis_rel = redis.Redis.from_url(redis_srv+"/11")

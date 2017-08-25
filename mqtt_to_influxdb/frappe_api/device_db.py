@@ -22,7 +22,7 @@ class DeviceDB(threading.Thread):
 		init_request_headers(session.headers)
 		self.session = session
 		self.redis_db = redis.Redis.from_url(redis_srv)
-		self.api_srv = 'http://' + config.get('frappe', 'host', fallback='127.0.0.1') + "/api/method/iot.hdb_api"
+		self.api_srv = config.get('frappe', 'url', fallback='http://127.0.0.1:8000') + "/api/method/iot.hdb_api"
 
 	def run(self):
 		device_map = self.device_map
