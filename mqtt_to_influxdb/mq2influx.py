@@ -4,6 +4,7 @@ import re
 import time
 import json
 import redis
+from configparser import ConfigParser
 import paho.mqtt.client as mqtt
 from tsdb.worker import Worker
 from frappe_api.device_db import DeviceDB
@@ -12,7 +13,10 @@ from frappe_api.device_db import DeviceDB
 match_topic = re.compile(r'^([^/]+)/(.+)$')
 match_data_path = re.compile(r'^([^/]+)/([^/]+)/(.+)$')
 
-redis_srv = "redis://localhost:6379/8"
+config = ConfigParser()
+config.read('../config.ini')
+
+redis_srv = "redis://" + config.get('redis', 'host', fallback='127.0.0.1:6379') + "/8"
 redis_db = redis.Redis.from_url(redis_srv)
 
 workers = {}
@@ -22,12 +26,12 @@ device_map = {}
 def create_worker(db):
 	worker = workers.get(db)
 	if not worker:
-		worker = Worker(db)
+		worker = Worker(db, config)
 		worker.start()
 		workers[db] = worker
 	return worker
 
-ddb = DeviceDB(redis_srv, device_map, create_worker)
+ddb = DeviceDB(redis_srv, device_map, create_worker, config)
 ddb.start()
 
 
@@ -153,7 +157,10 @@ client.on_connect = on_connect
 client.on_disconnect = on_disconnect
 client.on_message = on_message
 
-client.connect("localhost", 1883, 60)
+mqtt_host = config.get('mqtt', 'host', fallback='127.0.0.1')
+mqtt_port = config.get('mqtt', 'port', fallback='1883')
+mqtt_keepalive = config.get('mqtt', 'port', fallback=60)
+client.connect(mqtt_host, mqtt_port, mqtt_keepalive)
 
 
 # Blocking call that processes network traffic, dispatches callbacks and

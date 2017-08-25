@@ -4,12 +4,16 @@ import re
 import json
 import redis
 from collections import deque
+from configparser import ConfigParser
 import paho.mqtt.client as mqtt
 from frappe_api.worker import Worker
 from redis_client.sub import SubClient
 
+config = ConfigParser()
+config.read('../config.ini')
 
-redis_srv = "redis://localhost:6379"
+
+redis_srv = "redis://" + config.get('redis', 'host', fallback='127.0.0.1:6379')
 redis_sts = redis.Redis.from_url(redis_srv+"/9")
 redis_cfg = redis.Redis.from_url(redis_srv+"/10")
 redis_rel = redis.Redis.from_url(redis_srv+"/11")
@@ -84,7 +88,7 @@ def on_message(client, userdata, msg):
 worker = Worker()
 worker.start()
 # Redis MQTT message broker
-sub = SubClient(redis_srv)
+sub = SubClient(redis_srv, config)
 sub.start()
 
 # Listen on MQTT forwarding real-time data into redis, and forwarding configuration to frappe.
@@ -94,7 +98,10 @@ client.on_connect = on_connect
 client.on_disconnect = on_disconnect
 client.on_message = on_message
 
-client.connect("localhost", 1883, 60)
+mqtt_host = config.get('mqtt', 'host', fallback='127.0.0.1')
+mqtt_port = config.get('mqtt', 'port', fallback='1883')
+mqtt_keepalive = config.get('mqtt', 'port', fallback=60)
+client.connect(mqtt_host, mqtt_port, mqtt_keepalive)
 
 
 # Blocking call that processes network traffic, dispatches callbacks and

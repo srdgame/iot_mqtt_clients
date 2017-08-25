@@ -5,6 +5,10 @@ import base64
 import json
 import binascii
 import paho.mqtt.client as mqtt
+from configparser import ConfigParser
+
+config = ConfigParser()
+config.read('../config.ini')
 
 
 match_comm = re.compile(r'^([^/]+)/comm$')
@@ -53,7 +57,10 @@ client.on_disconnect = on_disconnect
 client.on_message = on_message
 client.on_subscribe = on_subscribe
 
-client.connect("localhost", 1883, 60)
+mqtt_host = config.get('mqtt', 'host', fallback='127.0.0.1')
+mqtt_port = config.get('mqtt', 'port', fallback='1883')
+mqtt_keepalive = config.get('mqtt', 'port', fallback=60)
+client.connect(mqtt_host, mqtt_port, mqtt_keepalive)
 
 
 # Blocking call that processes network traffic, dispatches callbacks and

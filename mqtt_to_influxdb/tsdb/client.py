@@ -5,12 +5,7 @@ from influxdb.exceptions import InfluxDBClientError
 
 
 class Client:
-	def __init__(	self,
-					host='localhost',
-					port=8086,
-					username='root',
-					password='root',
-					database='example'	):
+	def __init__(	self, host, port, username, password, database):
 		self.host = host
 		self.port = port
 		self.username = username

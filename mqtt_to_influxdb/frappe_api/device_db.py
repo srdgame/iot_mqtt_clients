@@ -4,9 +4,6 @@ import requests
 import redis
 
 
-api_srv = "http://127.0.0.1:8000/api/method/iot.hdb_api"
-
-
 def init_request_headers(headers):
 	headers['HDB-AuthorizationCode'] = '12312313aaa'
 	headers['Content-Type'] = 'application/json'
@@ -14,7 +11,7 @@ def init_request_headers(headers):
 
 
 class DeviceDB(threading.Thread):
-	def __init__(self, redis_srv, device_map, create_worker):
+	def __init__(self, redis_srv, device_map, create_worker, config):
 		threading.Thread.__init__(self)
 		self.thread_stop = False
 		self.device_map = device_map
@@ -25,6 +22,7 @@ class DeviceDB(threading.Thread):
 		init_request_headers(session.headers)
 		self.session = session
 		self.redis_db = redis.Redis.from_url(redis_srv)
+		self.api_srv = 'http://' + config.get('frappe', 'host', fallback='127.0.0.1') + "/api/method/iot.hdb_api"
 
 	def run(self):
 		device_map = self.device_map
@@ -47,7 +45,7 @@ class DeviceDB(threading.Thread):
 		self.thread_stop = True
 
 	def get_db(self, device):
-		r = self.session.get(api_srv + ".get_device_db", params={"sn": device})
+		r = self.session.get(self.api_srv + ".get_device_db", params={"sn": device})
 		if r.status_code != 200:
 			print(r.text)
 		db = r.json()

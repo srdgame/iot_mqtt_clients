@@ -56,12 +56,15 @@ class MQTTClient(threading.Thread):
 
 
 class SubClient(threading.Thread):
-	def __init__(self, srv):
+	def __init__(self, srv, config):
 		threading.Thread.__init__(self)
 		self.srv = srv
+		self.config = config
 
 	def run(self):
-		mqttc = MQTTClient(self)
+		host = self.config.get('mqtt', 'host', fallback='127.0.0.1')
+		port = self.config.get('mqtt', 'port', fallback=1883)
+		mqttc = MQTTClient(self, host=host, port=port)
 		mqttc.start()
 		self.mqttc = mqttc
 

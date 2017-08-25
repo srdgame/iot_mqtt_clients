@@ -5,9 +5,13 @@ import tsdb.client as tsdb
 
 
 class Worker(threading.Thread):
-	def __init__(self, db):
+	def __init__(self, db, config):
 		threading.Thread.__init__(self)
-		client = tsdb.Client(database=db)
+		host = config.get('influxdb', 'host', fallback='127.0.0.1')
+		port = config.get('influxdb', 'port', fallback=8086)
+		username = config.get('influxdb', 'username', fallback='root')
+		password = config.get('influxdb', 'password', fallback='root')
+		client = tsdb.Client(database=db, host=host, port=port, username=username, password=password)
 		client.connect()
 		client.create_database()
 		self.client = client
