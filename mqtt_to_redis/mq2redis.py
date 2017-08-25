@@ -11,7 +11,7 @@ from frappe_api.worker import Worker
 from redis_client.sub import SubClient
 
 
-logging.basicConfig(level=logging.NOTSET,
+logging.basicConfig(level=logging.DEBUG,
                 format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
                 datefmt='%a, %d %b %Y %H:%M:%S')
 
