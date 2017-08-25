@@ -58,8 +58,8 @@ client.on_message = on_message
 client.on_subscribe = on_subscribe
 
 mqtt_host = config.get('mqtt', 'host', fallback='127.0.0.1')
-mqtt_port = config.get('mqtt', 'port', fallback='1883')
-mqtt_keepalive = config.get('mqtt', 'port', fallback=60)
+mqtt_port = config.getint('mqtt', 'port', fallback=1883)
+mqtt_keepalive = config.getint('mqtt', 'port', fallback=60)
 client.connect(mqtt_host, mqtt_port, mqtt_keepalive)
 
 

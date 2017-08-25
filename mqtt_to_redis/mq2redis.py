@@ -65,9 +65,9 @@ def on_message(client, userdata, msg):
 		return
 
 	if topic == 'devices':
-		print(devid, msg.payload)
-		redis_rel.ltrim(devid, 0, -1000)
 		devs = json.loads(msg.payload.decode('utf-8'))
+		print(devid, devs)
+		redis_rel.ltrim(devid, 0, -1000)
 		for dev in devs:
 			redis_cfg.set(dev, json.dumps(devs[dev]))
 			redis_rel.lpush(devid, dev)
@@ -98,8 +98,8 @@ client.on_disconnect = on_disconnect
 client.on_message = on_message
 
 mqtt_host = config.get('mqtt', 'host', fallback='127.0.0.1')
-mqtt_port = config.get('mqtt', 'port', fallback='1883')
-mqtt_keepalive = config.get('mqtt', 'port', fallback=60)
+mqtt_port = config.getint('mqtt', 'port', fallback=1883)
+mqtt_keepalive = config.getint('mqtt', 'keepalive', fallback=60)
 client.connect(mqtt_host, mqtt_port, mqtt_keepalive)
 
 

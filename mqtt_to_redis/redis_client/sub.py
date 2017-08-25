@@ -63,8 +63,9 @@ class SubClient(threading.Thread):
 
 	def run(self):
 		host = self.config.get('mqtt', 'host', fallback='127.0.0.1')
-		port = self.config.get('mqtt', 'port', fallback=1883)
-		mqttc = MQTTClient(self, host=host, port=port)
+		port = self.config.getint('mqtt', 'port', fallback=1883)
+		keepalive = self.config.getint('mqtt', 'keepalive', fallback=60)
+		mqttc = MQTTClient(self, host=host, port=port, keepalive=keepalive)
 		mqttc.start()
 		self.mqttc = mqttc
 

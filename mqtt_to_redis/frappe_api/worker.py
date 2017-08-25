@@ -54,7 +54,7 @@ class Worker(threading.Thread):
 
 
 class CreateDevice(TaskBase):
-	def __init__(self, sn, props, config):
+	def __init__(self, sn, props):
 		self.sn = sn
 		self.props = props
 
