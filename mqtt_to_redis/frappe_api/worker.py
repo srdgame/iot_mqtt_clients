@@ -2,6 +2,7 @@ import threading
 import queue
 import requests
 import json
+import logging
 from configparser import ConfigParser
 
 
@@ -17,7 +18,7 @@ def init_request_headers(headers):
 
 class TaskBase:
 	def run(self):
-		print("TaskBase")
+		logging.debug("TaskBase")
 
 
 class Worker(threading.Thread):
@@ -34,7 +35,7 @@ class Worker(threading.Thread):
 				task.run()
 				q.task_done()
 			except queue.Empty:
-				print("This is empty Exeption!")
+				logging.error("This is empty Exeption!")
 				break
 
 	def stop(self):
@@ -69,7 +70,7 @@ class CreateDevice(TaskBase):
 		}
 		r = session.post(api_srv + ".add_device", data=json.dumps(dev))
 		if r.status_code != 200:
-			print(r.text)
+			logging.warning(r.text)
 
 
 class UpdateDevice(TaskBase):
@@ -90,7 +91,7 @@ class UpdateDevice(TaskBase):
 		}
 		r = session.post(api_srv + ".update_device", data=json.dumps(dev))
 		if r.status_code != 200:
-			print(r.text)
+			logging.warning(r.text)
 
 
 class UpdateDeviceStatus(TaskBase):
@@ -104,4 +105,4 @@ class UpdateDeviceStatus(TaskBase):
 
 		r = session.post(api_srv + ".update_device_status", data=json.dumps({"sn": self.sn,	"status": self.status}))
 		if r.status_code != 200:
-			print(r.text)
+			logging.warning(r.text)

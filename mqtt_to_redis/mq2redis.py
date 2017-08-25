@@ -3,11 +3,17 @@ from __future__ import unicode_literals
 import re
 import json
 import redis
+import logging
 from collections import deque
 from configparser import ConfigParser
 import paho.mqtt.client as mqtt
 from frappe_api.worker import Worker
 from redis_client.sub import SubClient
+
+
+logging.basicConfig(level=logging.NOTSET,
+                format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                datefmt='%a, %d %b %Y %H:%M:%S')
 
 config = ConfigParser()
 config.read('../config.ini')
@@ -27,7 +33,7 @@ device_status = {}
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
-	print("Main MQTT Connected with result code "+str(rc))
+	logging.info("Main MQTT Connected with result code "+str(rc))
 
 	# Subscribing in on_connect() means that if we lose the connection and
 	# reconnect then subscriptions will be renewed.
@@ -38,7 +44,7 @@ def on_connect(client, userdata, flags, rc):
 
 
 def on_disconnect(client, userdata, rc):
-	print("Main MQTT Disconnect with result code "+str(rc))
+	logging.info("Main MQTT Disconnect with result code "+str(rc))
 
 
 # The callback for when a PUBLISH message is received from the server.
@@ -66,7 +72,7 @@ def on_message(client, userdata, msg):
 
 	if topic == 'devices':
 		devs = json.loads(msg.payload.decode('utf-8'))
-		print(devid, devs)
+		logging.debug('%s\%s', devid, str(devs))
 		redis_rel.ltrim(devid, 0, -1000)
 		for dev in devs:
 			redis_cfg.set(dev, json.dumps(devs[dev]))

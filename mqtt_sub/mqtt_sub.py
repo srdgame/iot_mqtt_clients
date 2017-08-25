@@ -4,8 +4,14 @@ import re
 import base64
 import json
 import binascii
+import logging
 import paho.mqtt.client as mqtt
 from configparser import ConfigParser
+
+
+logging.basicConfig(level=logging.DEBUG,
+                format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                datefmt='%a, %d %b %Y %H:%M:%S')
 
 config = ConfigParser()
 config.read('../config.ini')
@@ -16,17 +22,17 @@ match_comm = re.compile(r'^([^/]+)/comm$')
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
-	print("Main MQTT Connected with result code " + str(rc))
+	logging.info("Main MQTT Connected with result code " + str(rc))
 
 	# Subscribing in on_connect() means that if we lose the connection and
 	# reconnect then subscriptions will be renewed.
 	#client.subscribe("$SYS/#")
-	print(client.subscribe("+/#"))
-	#print(client.subscribe("IDIDIDIDID/app/#"))
+	logging.debug(str(client.subscribe("+/#")))
+	#logging.debug(str(client.subscribe("IDIDIDIDID/app/#")))
 
 
 def on_disconnect(client, userdata, rc):
-	print("Main MQTT Disconnect with result code " + str(rc))
+	logging.info("Main MQTT Disconnect with result code " + str(rc))
 
 
 # The callback for when a PUBLISH message is received from the server.
@@ -36,16 +42,16 @@ def on_message(client, userdata, msg):
 		g = match_comm.match(msg.topic)
 		if g:
 			raw = base64.b64decode(data[2])
-			print(data[0], data[1], binascii.b2a_hex(raw))
+			logging.debug('%s\t%s\t%s', str(data[0]), str(data[1]), binascii.b2a_hex(raw))
 			return
-		print(msg.topic, data)
+		logging.debug('%s\t%s', msg.topic, str(data))
 	except Exception as ex:
-		print(ex)
-		print(msg.topic, msg.payload.decode('utf-8')) #, msg.qos, msg.retain)
+		logging.error('%s', str(ex))
+		logging.debug('%s\t%s', msg.topic, msg.payload.decode('utf-8')) #, msg.qos, msg.retain)
 
 
 def on_subscribe(client, userdata, mid, granted_qos):
-	print('ON_SUBSCRIBE', mid, granted_qos)
+	logging.info('ON_SUBSCRIBE %d %s', mid, str(granted_qos))
 
 
 # Listen on MQTT forwarding real-time data into redis, and forwarding configuration to frappe.

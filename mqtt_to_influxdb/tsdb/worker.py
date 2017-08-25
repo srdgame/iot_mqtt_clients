@@ -1,6 +1,7 @@
 import threading
 import queue
 import time
+import logging
 import tsdb.client as tsdb
 
 
@@ -44,7 +45,7 @@ class Worker(threading.Thread):
 					client.write_data(points)
 					tq.task_done()
 				except Exception as ex:
-					print("Exception", ex)
+					logging.error("Exception %s", str(ex))
 					tq.queue.appendleft(points)
 
 	def append_data(self, name, property, device, iot, timestamp, value, quality):

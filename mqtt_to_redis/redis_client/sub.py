@@ -5,6 +5,7 @@ import threading
 import redis
 import json
 import re
+import logging
 import paho.mqtt.client as mqtt
 
 
@@ -12,12 +13,12 @@ match_result = re.compile(r'^([^/]+)/result/([^/]+)')
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
-	print("Sub MQTT Connected with result code "+str(rc))
+	logging.info("Sub MQTT Connected with result code "+str(rc))
 	client.subscribe("+/result/#")
 
 
 def on_disconnect(client, userdata, rc):
-	print("Sub MQTT Disconnect with result code "+str(rc))
+	logging.info("Sub MQTT Disconnect with result code "+str(rc))
 
 
 # The callback for when a PUBLISH message is received from the server.
@@ -84,7 +85,7 @@ class SubClient(threading.Thread):
 			'''
 			Forward redis publish message to mqtt broker
 			'''
-			print('redis_message', channel, str)
+			logging.debug('redis_message\t%s\t%s', channel, str)
 			request = json.loads(str)
 			topic = request['device'] + "/" + channel[7:]
 			if request.get('topic'):
@@ -95,23 +96,23 @@ class SubClient(threading.Thread):
 			else:
 				request = json.dumps(request)
 			r = self.mqttc.publish(topic=topic, payload=request, qos=1, retain=False)
-			print("Sub MQTT publish result: ", r)
+			logging.debug("Sub MQTT publish result: %d", r)
 		except Exception as ex:
-			print(ex)
+			logging.error(str(ex))
 
 	def on_mqtt_message(self, dev, action, str):
 		try:
 			'''
 			Forward mqtt publish action result to redis
 			'''
-			print('mqtt_message', dev, action, str)
+			logging.debug('mqtt_message\t%s\t%s\t%s', dev, action, str)
 			result = json.loads(str)
 			if not result.get('device'):
 				result['device'] = dev
 			r = self.redis_client.publish("device_" + action + "_result", json.dumps(result))
-			print("Sub Redis publish result: ", r)
+			logging.debug("Sub Redis publish result: " + str(r))
 			if result.get('id'):
 				r = self.redis_client.set(result['id'], json.dumps(result), 600)
-				print(r)
+				logging.debug(str(r))
 		except Exception as ex:
-			print(ex)
+			logging.error(str(ex))

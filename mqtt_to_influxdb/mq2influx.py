@@ -4,11 +4,16 @@ import re
 import time
 import json
 import redis
+import logging
 from configparser import ConfigParser
 import paho.mqtt.client as mqtt
 from tsdb.worker import Worker
 from frappe_api.device_db import DeviceDB
 
+
+logging.basicConfig(level=logging.DEBUG,
+                format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                datefmt='%a, %d %b %Y %H:%M:%S')
 
 match_topic = re.compile(r'^([^/]+)/(.+)$')
 match_data_path = re.compile(r'^([^/]+)/([^/]+)/(.+)$')
@@ -88,7 +93,7 @@ def make_input_map(iot_device, cfg):
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
-	print("Connected with result code "+str(rc))
+	logging.info("Connected with result code "+str(rc))
 
 	# Subscribing in on_connect() means that if we lose the connection and
 	# reconnect then subscriptions will be renewed.
@@ -99,7 +104,7 @@ def on_connect(client, userdata, flags, rc):
 
 
 def on_disconnect(client, userdata, rc):
-	print("Disconnect with result code "+str(rc))
+	logging.info("Disconnect with result code "+str(rc))
 
 
 # The callback for when a PUBLISH message is received from the server.
@@ -133,7 +138,7 @@ def on_message(client, userdata, msg):
 		return
 
 	if topic == 'devices':
-		print(devid, json.loads(msg.payload.decode('utf-8')))
+		logging.debug('%s\t%s', devid, str(json.loads(msg.payload.decode('utf-8'))))
 		worker = get_worker(devid)
 		worker.append_data(name="iot_device", property="cfg", device=devid, iot=devid, timestamp=time.time(),
 							value=msg.payload.decode('utf-8'), quality=0)

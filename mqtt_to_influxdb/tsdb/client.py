@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 import influxdb
 from influxdb.exceptions import InfluxDBClientError
+import logging
 
 
 class Client:
@@ -39,11 +40,11 @@ class Client:
 			self._client.write_points(points, time_precision='ms')
 		except InfluxDBClientError as ex:
 			if ex.code == 400:
-				print(ex)
+				logging.error(str(ex))
 				return
 
 	def create_database(self):
 		try:
 			self._client.create_database(self.database)
 		except Exception as ex:
-			print(ex)
+			logging.error(str(ex))

@@ -2,6 +2,7 @@ import threading
 import time
 import requests
 import redis
+import logging
 
 
 def init_request_headers(headers):
@@ -37,7 +38,7 @@ class DeviceDB(threading.Thread):
 					redis_db.set(device, db)
 
 			except Exception as ex:
-				print(ex)
+				logging.error(str(ex))
 
 			time.sleep(30)
 
@@ -47,8 +48,8 @@ class DeviceDB(threading.Thread):
 	def get_db(self, device):
 		r = self.session.get(self.api_srv + ".get_device_db", params={"sn": device})
 		if r.status_code != 200:
-			print(r.text)
+			logging.error(r.text)
 		db = r.json()
-		print(time.time(), device, db)
+		logging.debug('%s\t%s\t%s', str(time.time()), device, db)
 		return db.get("message") or "example"
 
