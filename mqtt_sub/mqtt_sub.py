@@ -44,7 +44,7 @@ def on_message(client, userdata, msg):
 			raw = base64.b64decode(data[2])
 			logging.debug('%s\t%s\t%s', str(data[0]), str(data[1]), binascii.b2a_hex(raw))
 			return
-		logging.debug('%s\t%s', msg.topic, str(data))
+		logging.debug('%s\t%s\t%d\t%d', msg.topic, str(data), msg.qos, msg.retain)
 	except Exception as ex:
 		logging.error('%s', str(ex))
 		logging.debug('%s\t%s', msg.topic, msg.payload.decode('utf-8')) #, msg.qos, msg.retain)
