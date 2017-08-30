@@ -40,11 +40,11 @@ class Client:
 			self._client.write_points(points, time_precision='ms')
 		except InfluxDBClientError as ex:
 			if ex.code == 400:
-				logging.error(str(ex))
+				logging.exception('Catch an exception.')
 				return
 
 	def create_database(self):
 		try:
 			self._client.create_database(self.database)
 		except Exception as ex:
-			logging.error(str(ex))
+			logging.exception('Catch an exception.')

@@ -38,7 +38,7 @@ class DeviceDB(threading.Thread):
 					redis_db.set(device, db)
 
 			except Exception as ex:
-				logging.error(str(ex))
+				logging.exception('Catch an exception.')
 
 			time.sleep(30)
 

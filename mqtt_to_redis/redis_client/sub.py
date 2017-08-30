@@ -80,13 +80,13 @@ class SubClient(threading.Thread):
 			if item['type'] == 'message':
 				self.on_redis_message(item['channel'].decode('utf-8'), item['data'].decode('utf-8'))
 
-	def on_redis_message(self, channel, str):
+	def on_redis_message(self, channel, msg):
 		try:
 			'''
 			Forward redis publish message to mqtt broker
 			'''
-			logging.debug('redis_message\t%s\t%s', channel, str)
-			request = json.loads(str)
+			logging.debug('redis_message\t%s\t%s', channel, msg)
+			request = json.loads(msg)
 			topic = request['device'] + "/" + channel[7:]
 			if request.get('topic'):
 				topic = topic + "/" + request['topic']
@@ -98,15 +98,15 @@ class SubClient(threading.Thread):
 			r = self.mqttc.publish(topic=topic, payload=request, qos=1, retain=False)
 			logging.debug("Sub MQTT publish result: " + str(r))
 		except Exception as ex:
-			logging.error(str(ex))
+			logging.exception('Catch an exception.')
 
-	def on_mqtt_message(self, dev, action, str):
+	def on_mqtt_message(self, dev, action, msg):
 		try:
 			'''
 			Forward mqtt publish action result to redis
 			'''
-			logging.debug('mqtt_message\t%s\t%s\t%s', dev, action, str)
-			result = json.loads(str)
+			logging.debug('mqtt_message\t%s\t%s\t%s', dev, action, msg)
+			result = json.loads(msg)
 			if not result.get('device'):
 				result['device'] = dev
 			r = self.redis_client.publish("device_" + action + "_result", json.dumps(result))
@@ -115,4 +115,4 @@ class SubClient(threading.Thread):
 				r = self.redis_client.set(result['id'], json.dumps(result), 600)
 				logging.debug(str(r))
 		except Exception as ex:
-			logging.error(str(ex))
+			logging.exception('Catch an exception.')
