@@ -96,7 +96,7 @@ class SubClient(threading.Thread):
 			else:
 				request = json.dumps(request)
 			r = self.mqttc.publish(topic=topic, payload=request, qos=1, retain=False)
-			logging.debug("Sub MQTT publish result: %d", r)
+			logging.debug("Sub MQTT publish result: " + str(r))
 		except Exception as ex:
 			logging.error(str(ex))
 

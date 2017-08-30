@@ -17,6 +17,7 @@ logging.basicConfig(level=logging.DEBUG,
 
 match_topic = re.compile(r'^([^/]+)/(.+)$')
 match_data_path = re.compile(r'^([^/]+)/([^/]+)/(.+)$')
+match_stat_path = re.compile(r'^([^/]+)/([^/]+)/(.+)$')
 
 config = ConfigParser()
 config.read('../config.ini')
@@ -101,6 +102,7 @@ def on_connect(client, userdata, flags, rc):
 	client.subscribe("+/data")
 	client.subscribe("+/devices")
 	client.subscribe("+/status")
+	client.subscribe("+/stat")
 
 
 def on_disconnect(client, userdata, rc):
@@ -155,6 +157,15 @@ def on_message(client, userdata, msg):
 								value=val, quality=0)
 		return
 
+	if topic == 'stat':
+		payload = json.loads(msg.payload.decode('utf-8'))
+		g = match_stat_path.match(payload[0])
+		if g and msg.retain == 0:
+			g = g.groups()
+			worker = get_worker(devid)
+			value=float(payload[2])
+			worker.append_data(name='_stat_'+g[1], property=g[2], device=g[0], iot=devid, timestamp=payload[1], value=value, quality=0)
+		return
 
 client = mqtt.Client(client_id="SYS_MQTT_TO_INFLUXDB")
 client.username_pw_set("root", "bXF0dF9pb3RfYWRtaW4K")
