@@ -47,7 +47,7 @@ def on_message(client, userdata, msg):
 		logging.debug('%s\t%s\t%d\t%d', msg.topic, str(data), msg.qos, msg.retain)
 	except Exception as ex:
 		logging.exception('Catch an exception.')
-		logging.debug('%s\t%s', msg.topic, msg.payload.decode('utf-8')) #, msg.qos, msg.retain)
+		logging.debug('%s\t%s\t%d\t%d', msg.topic, msg.payload.decode('utf-8'), msg.qos, msg.retain)
 
 
 def on_subscribe(client, userdata, mid, granted_qos):
