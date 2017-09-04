@@ -22,8 +22,8 @@ match_stat_path = re.compile(r'^([^/]+)/([^/]+)/(.+)$')
 config = ConfigParser()
 config.read('../config.ini')
 
-redis_srv = config.get('redis', 'url', fallback='redis://127.0.0.1:6379')
-redis_db = redis.Redis.from_url(redis_srv+"/8")
+redis_srv = config.get('redis', 'url', fallback='redis://127.0.0.1:6379') + "/8"
+redis_db = redis.Redis.from_url(redis_srv)
 
 workers = {}
 device_map = {}
