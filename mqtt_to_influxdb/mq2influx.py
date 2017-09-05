@@ -1,6 +1,7 @@
 
 from __future__ import unicode_literals
 import re
+import os
 import time
 import json
 import redis
@@ -176,12 +177,16 @@ client.on_message = on_message
 mqtt_host = config.get('mqtt', 'host', fallback='127.0.0.1')
 mqtt_port = config.getint('mqtt', 'port', fallback=1883)
 mqtt_keepalive = config.getint('mqtt', 'port', fallback=60)
-client.connect(mqtt_host, mqtt_port, mqtt_keepalive)
 
+try:
+	client.connect_async(mqtt_host, mqtt_port, mqtt_keepalive)
 
-# Blocking call that processes network traffic, dispatches callbacks and
-# handles reconnecting.
-# Other loop*() functions are available that give a threaded interface and a
-# manual interface.
-client.loop_forever()
+	# Blocking call that processes network traffic, dispatches callbacks and
+	# handles reconnecting.
+	# Other loop*() functions are available that give a threaded interface and a
+	# manual interface.
+	client.loop_forever(retry_first_connection=True)
+except Exception as ex:
+	logging.exception('MQTT Exeption')
+	os._exit(1)
 

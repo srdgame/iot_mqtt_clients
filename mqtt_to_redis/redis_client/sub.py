@@ -5,6 +5,7 @@ import threading
 import redis
 import json
 import re
+import os
 import logging
 import paho.mqtt.client as mqtt
 
@@ -40,17 +41,21 @@ class MQTTClient(threading.Thread):
 		self.keepalive = keepalive
 
 	def run(self):
-		mqttc = mqtt.Client(userdata=self.client, client_id="SYS_MQTT_TO_REDIS.SUB")
-		mqttc.username_pw_set("root", "bXF0dF9pb3RfYWRtaW4K")
-		self.mqttc = mqttc
+		try:
+			mqttc = mqtt.Client(userdata=self.client, client_id="SYS_MQTT_TO_REDIS.SUB")
+			mqttc.username_pw_set("root", "bXF0dF9pb3RfYWRtaW4K")
+			self.mqttc = mqttc
 
-		mqttc.on_connect = on_connect
-		mqttc.on_disconnect = on_disconnect
-		mqttc.on_message = on_message
+			mqttc.on_connect = on_connect
+			mqttc.on_disconnect = on_disconnect
+			mqttc.on_message = on_message
 
-		mqttc.connect(self.host, self.port, self.keepalive)
+			mqttc.connect_async(self.host, self.port, self.keepalive)
 
-		mqttc.loop_forever()
+			mqttc.loop_forever(retry_first_connection=True)
+		except Exception as ex:
+			logging.exception('MQTT Exeption')
+			os._exit(1)
 
 	def publish(self, *args, **kwargs):
 		return self.mqttc.publish(*args, **kwargs)
