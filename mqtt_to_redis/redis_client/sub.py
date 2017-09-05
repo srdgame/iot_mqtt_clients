@@ -50,6 +50,7 @@ class MQTTClient(threading.Thread):
 			mqttc.on_disconnect = on_disconnect
 			mqttc.on_message = on_message
 
+			logging.debug('MQTT Connect to %s:%d', self.host, self.port)
 			mqttc.connect_async(self.host, self.port, self.keepalive)
 
 			mqttc.loop_forever(retry_first_connection=True)

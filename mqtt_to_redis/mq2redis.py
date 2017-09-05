@@ -109,6 +109,7 @@ mqtt_port = config.getint('mqtt', 'port', fallback=1883)
 mqtt_keepalive = config.getint('mqtt', 'keepalive', fallback=60)
 
 try:
+	logging.debug('MQTT Connect to %s:%d', mqtt_host, mqtt_port)
 	client.connect_async(mqtt_host, mqtt_port, mqtt_keepalive)
 
 	# Blocking call that processes network traffic, dispatches callbacks and
