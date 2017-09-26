@@ -101,6 +101,7 @@ def on_connect(client, userdata, flags, rc):
 	# reconnect then subscriptions will be renewed.
 	#client.subscribe("$SYS/#")
 	client.subscribe("+/data")
+	client.subscribe("+/apps")
 	client.subscribe("+/devices")
 	client.subscribe("+/status")
 	client.subscribe("+/stat")
@@ -140,8 +141,15 @@ def on_message(client, userdata, msg):
 			worker.append_data(name=g[1], property=prop, device=g[0], iot=devid, timestamp=payload[1], value=value, quality=payload[3])
 		return
 
+	if topic == 'apps':
+		logging.debug('%s/apps\t%s', devid, str(json.loads(msg.payload.decode('utf-8'))))
+		worker = get_worker(devid)
+		worker.append_data(name="iot_device", property="apps", device=devid, iot=devid, timestamp=time.time(),
+							value=msg.payload.decode('utf-8'), quality=0)
+		make_input_map(devid, json.loads(msg.payload.decode('utf-8')))
+
 	if topic == 'devices':
-		logging.debug('%s\t%s', devid, str(json.loads(msg.payload.decode('utf-8'))))
+		logging.debug('%s/devices\t%s', devid, str(json.loads(msg.payload.decode('utf-8'))))
 		worker = get_worker(devid)
 		worker.append_data(name="iot_device", property="cfg", device=devid, iot=devid, timestamp=time.time(),
 							value=msg.payload.decode('utf-8'), quality=0)
@@ -149,6 +157,7 @@ def on_message(client, userdata, msg):
 		return
 
 	if topic == 'status':
+		# TODO: Update Quality of All Inputs when gate is offline.
 		worker = get_worker(devid)
 		#redis_sts.set(devid, msg.payload.decode('utf-8'))
 		status = msg.payload.decode('utf-8')

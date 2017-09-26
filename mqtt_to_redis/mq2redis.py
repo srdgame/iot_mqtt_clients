@@ -20,6 +20,7 @@ config = ConfigParser()
 config.read('../config.ini')
 
 redis_srv = config.get('redis', 'url', fallback='redis://127.0.0.1:6379')
+redis_apps = redis.Redis.from_url(redis_srv+"/6")
 redis_sts = redis.Redis.from_url(redis_srv+"/9")
 redis_cfg = redis.Redis.from_url(redis_srv+"/10")
 redis_rel = redis.Redis.from_url(redis_srv+"/11")
@@ -40,6 +41,7 @@ def on_connect(client, userdata, flags, rc):
 	# reconnect then subscriptions will be renewed.
 	#client.subscribe("$SYS/#")
 	client.subscribe("+/data")
+	client.subscribe("+/apps")
 	client.subscribe("+/devices")
 	client.subscribe("+/status")
 
@@ -71,9 +73,17 @@ def on_message(client, userdata, msg):
 			})
 		return
 
+	if topic == 'apps':
+		apps = json.loads(msg.payload.decode('utf-8'))
+		logging.debug('%s/apps\t%s', devid, str(apps))
+		redis_apps.set(devid, json.dumps(apps))
+
 	if topic == 'devices':
 		devs = json.loads(msg.payload.decode('utf-8'))
-		logging.debug('%s\%s', devid, str(devs))
+		logging.debug('%s/devices\t%s', devid, str(devs))
+		devkeys = redis_rel.lrange(devid, 0, 1000)
+		if len(devkeys) > 0:
+			redis_cfg.delete(devkeys)
 		redis_rel.ltrim(devid, 0, -1000)
 		for dev in devs:
 			redis_cfg.set(dev, json.dumps(devs[dev]))
