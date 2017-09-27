@@ -18,6 +18,7 @@ config.read('../config.ini')
 
 
 match_comm = re.compile(r'^([^/]+)/comm$')
+match_status = re.compile(r'^([^/]+)/status$')
 
 
 # The callback for when the client receives a CONNACK response from the server.
@@ -38,6 +39,10 @@ def on_disconnect(client, userdata, rc):
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
 	try:
+		g = match_status.match(msg.topic)
+		if g:
+			logging.debug('%s\t%s\t%d\t%d', msg.topic, msg.payload.decode('utf-8'), msg.qos, msg.retain)
+			return
 		data = json.loads(msg.payload.decode('utf-8'))
 		g = match_comm.match(msg.topic)
 		if g:
