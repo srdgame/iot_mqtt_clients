@@ -88,8 +88,10 @@ def on_message(client, userdata, msg):
 		for dev in devs:
 			redis_cfg.set(dev, json.dumps(devs[dev]))
 			redis_rel.lpush(devid, dev)
+			''' MQTT authed by frappe's IOT Device, so we do not need to create device
 			if dev == devid:
 				worker.create_device(devid, devs[devid])
+			'''
 		return
 
 	if topic == 'status':

@@ -34,13 +34,13 @@ class DeviceDB(threading.Thread):
 			try:
 				for device in self.device_map:
 					db = self.get_db(device)
-					device_map[device] = create_worker(db)
 					redis_db.set(device, db)
+					device_map[device] = create_worker(db)
 
 			except Exception as ex:
 				logging.exception('Catch an exception.')
 
-			time.sleep(30)
+			time.sleep(3 * 60)
 
 	def stop(self):
 		self.thread_stop = True
