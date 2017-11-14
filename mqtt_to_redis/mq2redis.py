@@ -83,7 +83,7 @@ def on_message(client, userdata, msg):
 		logging.debug('%s/devices\t%s', devid, str(devs))
 		devkeys = redis_rel.lrange(devid, 0, 1000)
 		if len(devkeys) > 0:
-			redis_cfg.delete(devkeys)
+			redis_cfg.delete(*devkeys)
 		redis_rel.ltrim(devid, 0, -1000)
 		for dev in devs:
 			redis_cfg.set(dev, json.dumps(devs[dev]))
@@ -99,6 +99,8 @@ def on_message(client, userdata, msg):
 		redis_sts.set(devid, status)
 		device_status[devid] = status
 		worker.update_device_status(devid, status)
+		if status == 'OFFLINE':
+			redis_rtdb.delete(devid)
 		return
 
 
