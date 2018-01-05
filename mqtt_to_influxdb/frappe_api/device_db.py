@@ -7,7 +7,7 @@ import logging
 
 def init_request_headers(headers):
 	headers['HDB-AuthorizationCode'] = '12312313aaa'
-	headers['Content-Type'] = 'application/json'
+	#headers['Content-Type'] = 'application/json'
 	headers['Accept'] = 'application/json'
 
 
@@ -49,6 +49,7 @@ class DeviceDB(threading.Thread):
 		r = self.session.get(self.api_srv + ".get_device_db", params={"sn": device})
 		if r.status_code != 200:
 			logging.error(r.text)
+			raise r.status_code
 		db = r.json()
 		logging.debug('%s\t%s\t%s', str(time.time()), device, db)
 		return db.get("message") or "example"
