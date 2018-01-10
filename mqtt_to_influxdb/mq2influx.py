@@ -57,28 +57,29 @@ def get_worker(iot_device):
 
 def get_input_type(val):
 	if isinstance(val, int):
-		return "int", val
+		return "int"
 	elif isinstance(val, float):
-		return "float", val
+		return "float"
 	else:
-		return "string", str(val)
+		return "string"
 
 
 inputs_map = {}
 
 
 def get_input_vt(iot_device, device, input, val):
-	t, val = get_input_type(val)
-	if t == "string":
+	if get_input_type(val) == "string":
 		return "string", val
 
 	key = iot_device + "/" + device + "/" + input
 	vt = inputs_map.get(key)
 
-	if vt:
+	if vt == 'int':
 		return vt, int(val)
-
-	return None, float(val)
+	elif vt == 'string':
+		return vt, str(val)
+	else:
+		return None, float(val)
 
 
 def make_input_map(iot_device, cfg):
@@ -146,7 +147,6 @@ def on_message(client, userdata, msg):
 		worker = get_worker(devid)
 		worker.append_data(name="iot_device", property="apps", device=devid, iot=devid, timestamp=time.time(),
 							value=msg.payload.decode('utf-8'), quality=0)
-		make_input_map(devid, json.loads(msg.payload.decode('utf-8')))
 
 	if topic == 'devices':
 		logging.debug('%s/devices\t%s', devid, str(json.loads(msg.payload.decode('utf-8'))))
