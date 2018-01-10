@@ -100,7 +100,9 @@ def on_message(client, userdata, msg):
 		device_status[devid] = status
 		worker.update_device_status(devid, status)
 		if status == 'OFFLINE':
-			redis_rtdb.delete(devid)
+			devkeys = redis_rel.lrange(devid, 0, 1000)
+			if len(devkeys) > 0:
+				redis_rtdb.delete(*devkeys)
 		return
 
 
