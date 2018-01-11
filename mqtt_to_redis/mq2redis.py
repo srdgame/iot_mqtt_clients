@@ -127,6 +127,7 @@ def on_message(client, userdata, msg):
 			redis_apps.expire(devid, redis_offline_expire)
 			devkeys = redis_rel.lrange(devid, 0, 1000)
 			for dev in devkeys:
+				redis_cfg.expire(dev, redis_offline_expire)
 				redis_rtdb.expire(dev, redis_offline_expire)
 
 		return
