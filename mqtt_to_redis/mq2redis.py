@@ -20,11 +20,14 @@ config = ConfigParser()
 config.read('../config.ini')
 
 redis_srv = config.get('redis', 'url', fallback='redis://127.0.0.1:6379')
-redis_apps = redis.Redis.from_url(redis_srv+"/6")
-redis_sts = redis.Redis.from_url(redis_srv+"/9")
-redis_cfg = redis.Redis.from_url(redis_srv+"/10")
-redis_rel = redis.Redis.from_url(redis_srv+"/11")
-redis_rtdb = redis.Redis.from_url(redis_srv+"/12")
+redis_apps = redis.Redis.from_url(redis_srv+"/6") # device installed app list
+redis_sts = redis.Redis.from_url(redis_srv+"/9") # device status (online or offline)
+redis_cfg = redis.Redis.from_url(redis_srv+"/10") # device defines
+redis_rel = redis.Redis.from_url(redis_srv+"/11") # device relationship
+redis_rtdb = redis.Redis.from_url(redis_srv+"/12") # device real-time data
+
+''' Set all data be expired after device offline '''
+redis_offline_expire = 3600 * 24 * 7
 
 data_queue = deque()
 match_topic = re.compile(r'^([^/]+)/(.+)$')
@@ -67,9 +70,18 @@ def on_message(client, userdata, msg):
 		g = match_data_path.match(payload[0])
 		if g and msg.retain == 0:
 			g = g.groups()
+			dev = g[0]
+			intput = g[1]
+			# pop input key
 			payload.pop(0)
-			r = redis_rtdb.hmset(g[0], {
-				g[1]: json.dumps(payload)
+
+			ttl = redis_rtdb.ttl(dev)
+			if ttl and (ttl >= 0):
+				redis_rtdb.persist(dev)
+
+			# logging.debug('device: %s\tInput: %s\t Value: %s', g[0], g[1], json.dumps(payload))
+			r = redis_rtdb.hmset(dev, {
+				intput: json.dumps(payload)
 			})
 		return
 
@@ -81,10 +93,19 @@ def on_message(client, userdata, msg):
 	if topic == 'devices':
 		devs = json.loads(msg.payload.decode('utf-8'))
 		logging.debug('%s/devices\t%s', devid, str(devs))
+
+		ttl = redis_rel.ttl(devid)
+		if ttl and (ttl >= 0):
+			redis_rel.persist(devid)
 		devkeys = redis_rel.lrange(devid, 0, 1000)
-		if len(devkeys) > 0:
-			redis_cfg.delete(*devkeys)
 		redis_rel.ltrim(devid, 0, -1000)
+
+		## Cleanup cfg and rtdb
+		for dev in devkeys:
+			if devs.get(dev) is None:
+				redis_cfg.expire(dev, redis_offline_expire)
+				redis_rtdb.expire(dev, redis_offline_expire)
+
 		for dev in devs:
 			redis_cfg.set(dev, json.dumps(devs[dev]))
 			redis_rel.lpush(devid, dev)
@@ -97,12 +118,17 @@ def on_message(client, userdata, msg):
 	if topic == 'status':
 		status = msg.payload.decode('utf-8')
 		redis_sts.set(devid, status)
+
 		device_status[devid] = status
 		worker.update_device_status(devid, status)
 		if status == 'OFFLINE':
+			redis_sts.expire(devid, redis_offline_expire)
+			redis_rel.expire(devid, redis_offline_expire)
+			redis_apps.expire(devid, redis_offline_expire)
 			devkeys = redis_rel.lrange(devid, 0, 1000)
-			if len(devkeys) > 0:
-				redis_rtdb.delete(*devkeys)
+			for dev in devkeys:
+				redis_rtdb.expire(dev, redis_offline_expire)
+
 		return
 
 
