@@ -103,6 +103,7 @@ def on_connect(client, userdata, flags, rc):
 	#client.subscribe("$SYS/#")
 	client.subscribe("+/data")
 	client.subscribe("+/apps")
+	client.subscribe("+/exts")
 	client.subscribe("+/devices")
 	client.subscribe("+/status")
 	client.subscribe("+/stat")
@@ -143,17 +144,23 @@ def on_message(client, userdata, msg):
 		return
 
 	if topic == 'apps':
-		logging.debug('%s/apps\t%s', devid, str(json.loads(msg.payload.decode('utf-8'))))
+		data = msg.payload.decode('utf-8')
+		logging.debug('%s/apps\t%s', devid, data)
 		worker = get_worker(devid)
-		worker.append_data(name="iot_device", property="apps", device=devid, iot=devid, timestamp=time.time(),
-							value=msg.payload.decode('utf-8'), quality=0)
+		worker.append_data(name="iot_device", property="apps", device=devid, iot=devid, timestamp=time.time(), value=data, quality=0)
+
+	if topic == 'exts':
+		data = msg.payload.decode('utf-8')
+		logging.debug('%s/exts\t%s', devid, data)
+		worker = get_worker(devid)
+		worker.append_data(name="iot_device", property="exts", device=devid, iot=devid, timestamp=time.time(), value=data, quality=0)
 
 	if topic == 'devices':
-		logging.debug('%s/devices\t%s', devid, str(json.loads(msg.payload.decode('utf-8'))))
+		data = msg.payload.decode('utf-8')
+		logging.debug('%s/devices\t%s', devid, data)
 		worker = get_worker(devid)
-		worker.append_data(name="iot_device", property="cfg", device=devid, iot=devid, timestamp=time.time(),
-							value=msg.payload.decode('utf-8'), quality=0)
-		make_input_map(devid, json.loads(msg.payload.decode('utf-8')))
+		worker.append_data(name="iot_device", property="cfg", device=devid, iot=devid, timestamp=time.time(), value=data, quality=0)
+		make_input_map(devid, json.loads(data))
 		return
 
 	if topic == 'status':
@@ -163,8 +170,7 @@ def on_message(client, userdata, msg):
 		status = msg.payload.decode('utf-8')
 		if status == "ONLINE" or status == "OFFLINE":
 			val = status == "ONLINE"
-			worker.append_data(name="device_status", property="online", device=devid, iot=devid, timestamp=time.time(),
-								value=val, quality=0)
+			worker.append_data(name="device_status", property="online", device=devid, iot=devid, timestamp=time.time(), value=val, quality=0)
 		return
 
 	if topic == 'stat':

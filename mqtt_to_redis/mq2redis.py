@@ -20,7 +20,8 @@ config = ConfigParser()
 config.read('../config.ini')
 
 redis_srv = config.get('redis', 'url', fallback='redis://127.0.0.1:6379')
-redis_apps = redis.Redis.from_url(redis_srv+"/6") # device installed app list
+redis_exts = redis.Redis.from_url(redis_srv+"/5") # device installed extension list
+redis_apps = redis.Redis.from_url(redis_srv+"/6") # device installed application list
 redis_sts = redis.Redis.from_url(redis_srv+"/9") # device status (online or offline)
 redis_cfg = redis.Redis.from_url(redis_srv+"/10") # device defines
 redis_rel = redis.Redis.from_url(redis_srv+"/11") # device relationship
@@ -45,6 +46,7 @@ def on_connect(client, userdata, flags, rc):
 	#client.subscribe("$SYS/#")
 	client.subscribe("+/data")
 	client.subscribe("+/apps")
+	client.subscribe("+/exts")
 	client.subscribe("+/devices")
 	client.subscribe("+/status")
 
@@ -90,6 +92,11 @@ def on_message(client, userdata, msg):
 		logging.debug('%s/apps\t%s', devid, str(apps))
 		redis_apps.set(devid, json.dumps(apps))
 
+	if topic == 'exts':
+		apps = json.loads(msg.payload.decode('utf-8'))
+		logging.debug('%s/exts\t%s', devid, str(apps))
+		redis_exts.set(devid, json.dumps(apps))
+
 	if topic == 'devices':
 		devs = json.loads(msg.payload.decode('utf-8'))
 		logging.debug('%s/devices\t%s', devid, str(devs))
@@ -125,6 +132,7 @@ def on_message(client, userdata, msg):
 			redis_sts.expire(devid, redis_offline_expire)
 			redis_rel.expire(devid, redis_offline_expire)
 			redis_apps.expire(devid, redis_offline_expire)
+			redis_exts.expire(devid, redis_offline_expire)
 			devkeys = redis_rel.lrange(devid, 0, 1000)
 			for dev in devkeys:
 				redis_cfg.expire(dev, redis_offline_expire)
