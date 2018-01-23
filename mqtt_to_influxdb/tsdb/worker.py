@@ -58,3 +58,15 @@ class Worker(threading.Thread):
 			"value": value,
 			"quality": quality,
 		})
+
+	def append_event(self, level, device, iot, timestamp, value, quality):
+		self.data_queue.put({
+			"name": "iot_device_event",
+			"property": "event",
+			"device": device,
+			"iot": iot,
+			"timestamp": timestamp,
+			"value": value,
+			"quality": quality,
+			"level": level,
+		})

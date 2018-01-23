@@ -107,6 +107,7 @@ def on_connect(client, userdata, flags, rc):
 	client.subscribe("+/devices")
 	client.subscribe("+/status")
 	client.subscribe("+/stat")
+	client.subscribe("+/event")
 
 
 def on_disconnect(client, userdata, rc):
@@ -182,6 +183,17 @@ def on_message(client, userdata, msg):
 			value=float(payload[2])
 			worker.append_data(name='_stat_'+g[1], property=g[2], device=g[0], iot=devid, timestamp=payload[1], value=value, quality=0)
 		return
+
+	if topic == 'event':
+		payload = json.loads(msg.payload.decode('utf-8'))
+		if msg.retain == 0:
+			worker = get_worker(devid)
+			devsn = payload[0]
+			value = json.dumps(payload[2])
+			timestamp = payload[3] or time.time()
+			worker.append_event(level=int(payload[1]), device=devsn, iot=devid, timestamp=timestamp, value=value, quality=0)
+		return
+
 
 client = mqtt.Client(client_id="SYS_MQTT_TO_INFLUXDB")
 client.username_pw_set("root", "bXF0dF9pb3RfYWRtaW4K")

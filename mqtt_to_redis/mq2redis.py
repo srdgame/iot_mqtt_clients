@@ -49,6 +49,7 @@ def on_connect(client, userdata, flags, rc):
 	client.subscribe("+/exts")
 	client.subscribe("+/devices")
 	client.subscribe("+/status")
+	client.subscribe("+/event")
 
 
 def on_disconnect(client, userdata, rc):
@@ -138,6 +139,11 @@ def on_message(client, userdata, msg):
 				redis_cfg.expire(dev, redis_offline_expire)
 				redis_rtdb.expire(dev, redis_offline_expire)
 
+		return
+
+	if topic == 'event':
+		event = msg.payload.decode('utf-8')
+		worker.device_event(devid, event)
 		return
 
 

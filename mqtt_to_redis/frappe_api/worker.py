@@ -3,6 +3,8 @@ import queue
 import requests
 import json
 import logging
+import datetime
+import time
 from configparser import ConfigParser
 
 
@@ -52,6 +54,9 @@ class Worker(threading.Thread):
 
 	def update_device_status(self, *args, **kwargs):
 		self.add(UpdateDeviceStatus(*args, **kwargs))
+
+	def device_event(self, *args, **kwargs):
+		self.add(DeviceEvent(*args, **kwargs))
 
 
 class CreateDevice(TaskBase):
@@ -104,5 +109,34 @@ class UpdateDeviceStatus(TaskBase):
 		init_request_headers(session.headers)
 
 		r = session.post(api_srv + ".update_device_status", data=json.dumps({"sn": self.sn,	"status": self.status}))
+		if r.status_code != 200:
+			logging.warning(r.text)
+
+DATE_FORMAT = "%Y-%m-%d"
+TIME_FORMAT = "%H:%M:%S.%f"
+DATETIME_FORMAT = DATE_FORMAT + " " + TIME_FORMAT
+
+class DeviceEvent(TaskBase):
+	def __init__(self, sn, event):
+		self.sn = sn
+		self.event = event
+
+	def run(self):
+		session = requests.session()
+		init_request_headers(session.headers)
+		event = json.loads(self.event)
+		timestamp = datetime.datetime.utcfromtimestamp(event[3]).strftime(DATETIME_FORMAT)
+
+		data= json.dumps({
+			"device": self.sn,
+			"error_key": event[0],
+			"error_level": event[1],
+			"error_type": event[2].get("type") or "EVENT",
+			"error_info": json.dumps(event[2]),
+			"time": timestamp,
+			"wechat_notify": 1,
+		})
+
+		r = session.post(api_srv + ".add_device_error", data=data)
 		if r.status_code != 200:
 			logging.warning(r.text)

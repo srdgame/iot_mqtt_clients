@@ -24,18 +24,33 @@ class Client:
 	def write_data(self, data_list):
 		points = []
 		for data in data_list:
-			points.append({
-				"measurement": data['name'],
-				"tags": {
-					"device": data['device'],
-					"iot": data['iot']
-				},
-				"time": int(data['timestamp'] * 1000),
-				"fields": {
-					data['property']: data['value'],
-					"quality": data['quality'],
-				}
-			})
+			if data.get('level') is not None and data['name'] == 'iot_device_event':
+				points.append({
+					"measurement": data['name'],
+					"tags": {
+						"device": data['device'],
+						"iot": data['iot']
+					},
+					"time": int(data['timestamp'] * 1000),
+					"fields": {
+						data['property']: data['value'],
+						"quality": data['quality'],
+						"level": data['level']
+					}
+				})
+			else:
+				points.append({
+					"measurement": data['name'],
+					"tags": {
+						"device": data['device'],
+						"iot": data['iot']
+					},
+					"time": int(data['timestamp'] * 1000),
+					"fields": {
+						data['property']: data['value'],
+						"quality": data['quality'],
+					}
+				})
 		try:
 			self._client.write_points(points, time_precision='ms')
 		except InfluxDBClientError as ex:
