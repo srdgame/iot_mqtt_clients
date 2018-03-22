@@ -11,6 +11,7 @@ import paho.mqtt.client as mqtt
 
 
 match_result = re.compile(r'^([^/]+)/result/([^/]+)')
+redis_result_expire = 60 * 60 * 24 # in seconds  (24 hours)
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
@@ -118,7 +119,7 @@ class SubClient(threading.Thread):
 			r = self.redis_client.publish("device_" + action + "_result", json.dumps(result))
 			logging.debug("Sub Redis publish result: " + str(r))
 			if result.get('id'):
-				r = self.redis_client.set(result['id'], json.dumps(result), 600)
+				r = self.redis_client.set(result['id'], json.dumps(result), redis_result_expire)
 				logging.debug(str(r))
 		except Exception as ex:
 			logging.exception('Catch an exception.')

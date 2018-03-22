@@ -22,6 +22,7 @@ config.read('../config.ini')
 redis_srv = config.get('redis', 'url', fallback='redis://127.0.0.1:6379')
 redis_exts = redis.Redis.from_url(redis_srv+"/5") # device installed extension list
 redis_apps = redis.Redis.from_url(redis_srv+"/6") # device installed application list
+#redis_result = redis.Redis.from_url(redis_srv+"/7") # device command/batch result
 redis_sts = redis.Redis.from_url(redis_srv+"/9") # device status (online or offline)
 redis_cfg = redis.Redis.from_url(redis_srv+"/10") # device defines
 redis_rel = redis.Redis.from_url(redis_srv+"/11") # device relationship
