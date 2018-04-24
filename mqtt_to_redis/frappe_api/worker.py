@@ -125,18 +125,18 @@ class DeviceEvent(TaskBase):
 		session = requests.session()
 		init_request_headers(session.headers)
 		event = json.loads(self.event)
-		timestamp = datetime.datetime.utcfromtimestamp(event[3]).strftime(DATETIME_FORMAT)
+		timestamp = datetime.datetime.utcfromtimestamp(event[2]).strftime(DATETIME_FORMAT)
 
 		data= json.dumps({
 			"device": self.sn,
-			"error_key": event[0],
-			"error_level": event[1],
-			"error_type": event[2].get("type") or "EVENT",
-			"error_info": json.dumps(event[2]),
+			"level": event[1].get("level") or 0,
+			"type": event[1].get("type") or "EVENT",
+			"info": event[1].get("info") or "EVENT INFO",
+			"data": json.dumps(event[1].get("data")),
 			"time": timestamp,
 			"wechat_notify": 1,
 		})
 
-		r = session.post(api_srv + ".add_device_error", data=data)
+		r = session.post(api_srv + ".add_device_event", data=data)
 		if r.status_code != 200:
 			logging.warning(r.text)

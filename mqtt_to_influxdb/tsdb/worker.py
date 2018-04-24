@@ -2,6 +2,7 @@ import threading
 import queue
 import time
 import logging
+import json
 import tsdb.client as tsdb
 
 
@@ -59,14 +60,15 @@ class Worker(threading.Thread):
 			"quality": quality,
 		})
 
-	def append_event(self, level, device, iot, timestamp, value, quality):
+	def append_event(self, device, iot, timestamp, event, quality):
 		self.data_queue.put({
 			"name": "iot_device_event",
 			"property": "event",
 			"device": device,
 			"iot": iot,
 			"timestamp": timestamp,
-			"value": value,
+			"value": json.dumps(event),
 			"quality": quality,
-			"level": level,
+			"level": event.get('level'),
+			"type": event.get('type'),
 		})

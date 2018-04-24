@@ -189,9 +189,9 @@ def on_message(client, userdata, msg):
 		if msg.retain == 0:
 			worker = get_worker(devid)
 			devsn = payload[0]
-			value = json.dumps(payload[2])
-			timestamp = payload[3] or time.time()
-			worker.append_event(level=int(payload[1]), device=devsn, iot=devid, timestamp=timestamp, value=value, quality=0)
+			event = payload[1]
+			timestamp = payload[2] or time.time()
+			worker.append_event(device=devsn, iot=devid, timestamp=timestamp, event=event, quality=0)
 		return
 
 
