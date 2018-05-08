@@ -129,6 +129,7 @@ class DeviceEvent(TaskBase):
 
 		data= json.dumps({
 			"device": self.sn,
+			"source": event[0],
 			"level": event[1].get("level") or 0,
 			"type": event[1].get("type") or "EVENT",
 			"info": event[1].get("info") or "EVENT INFO",
