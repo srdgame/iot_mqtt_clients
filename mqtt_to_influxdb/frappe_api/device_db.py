@@ -22,7 +22,7 @@ class DeviceDB(threading.Thread):
 		# session.auth = (username, passwd)
 		init_request_headers(session.headers)
 		self.session = session
-		self.redis_db = redis.Redis.from_url(redis_srv)
+		self.redis_db = redis.Redis.from_url(redis_srv + "/8") # device influxdb database
 		self.api_srv = config.get('frappe', 'url', fallback='http://127.0.0.1:8000') + "/api/method/iot.hdb_api"
 
 	def run(self):
