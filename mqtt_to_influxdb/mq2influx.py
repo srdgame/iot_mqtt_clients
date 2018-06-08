@@ -6,6 +6,7 @@ import time
 import json
 import redis
 import logging
+import zlib
 from configparser import ConfigParser
 import paho.mqtt.client as mqtt
 from tsdb.worker import Worker
@@ -102,6 +103,7 @@ def on_connect(client, userdata, flags, rc):
 	# reconnect then subscriptions will be renewed.
 	#client.subscribe("$SYS/#")
 	client.subscribe("+/data")
+	client.subscribe("+/data_gz")
 	client.subscribe("+/apps")
 	client.subscribe("+/exts")
 	client.subscribe("+/devices")
@@ -142,6 +144,30 @@ def on_message(client, userdata, msg):
 			else:
 				value = str(value)
 			worker.append_data(name=g[1], property=prop, device=g[0], iot=devid, timestamp=payload[1], value=value, quality=payload[3])
+		return
+
+	if topic == 'data_gz':
+		try:
+			payload = zlib.decompress(msg.payload)
+			data_list = json.loads(payload)
+			for d in data_list:
+				g = match_data_path.match(d[0])
+				if g and msg.retain == 0:
+					g = g.groups()
+					worker = get_worker(devid)
+					prop = g[2]
+					value = d[2]
+					if prop == "value":
+						t, val = get_input_vt(devid, g[0], g[1], value)
+						if t:
+							prop = t + "_" + prop
+						value = val
+					else:
+						value = str(value)
+					worker.append_data(name=g[1], property=prop, device=g[0], iot=devid, timestamp=d[1], value=value, quality=d[3])
+		except Exception as ex:
+			logging.exception(ex)
+			logging.debug('Catch an exception: %s\t%d\t%d', msg.topic, msg.qos, msg.retain)
 		return
 
 	if topic == 'apps':

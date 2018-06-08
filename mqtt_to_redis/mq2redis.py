@@ -5,6 +5,7 @@ import os
 import json
 import redis
 import logging
+import zlib
 from collections import deque
 from configparser import ConfigParser
 import paho.mqtt.client as mqtt
@@ -46,6 +47,7 @@ def on_connect(client, userdata, flags, rc):
 	# reconnect then subscriptions will be renewed.
 	#client.subscribe("$SYS/#")
 	client.subscribe("+/data")
+	client.subscribe("+/data_gz")
 	client.subscribe("+/apps")
 	client.subscribe("+/exts")
 	client.subscribe("+/devices")
@@ -87,6 +89,32 @@ def on_message(client, userdata, msg):
 			r = redis_rtdb.hmset(dev, {
 				intput: json.dumps(payload)
 			})
+		return
+
+	if topic == 'data_gz':
+		try:
+			payload = zlib.decompress(msg.payload)
+			data_list = json.loads(payload)
+			for d in data_list:
+				g = match_data_path.match(d[0])
+				if g and msg.retain == 0:
+					g = g.groups()
+					dev = g[0]
+					intput = g[1]
+					# pop input key
+					d.pop(0)
+
+					ttl = redis_rtdb.ttl(dev)
+					if ttl and (ttl >= 0):
+						redis_rtdb.persist(dev)
+
+					logging.debug('device: %s\tInput: %s\t Value: %s', g[0], g[1], json.dumps(payload))
+					r = redis_rtdb.hmset(dev, {
+						intput: json.dumps(d)
+					})
+		except Exception as ex:
+			logging.exception(ex)
+			logging.debug('Catch an exception: %s\t%d\t%d', msg.topic, msg.qos, msg.retain)
 		return
 
 	if topic == 'apps':
