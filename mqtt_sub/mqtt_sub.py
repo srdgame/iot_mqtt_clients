@@ -5,6 +5,7 @@ import base64
 import json
 import binascii
 import logging
+import zlib
 import paho.mqtt.client as mqtt
 from configparser import ConfigParser
 
@@ -18,6 +19,7 @@ config.read('../config.ini')
 
 
 match_comm = re.compile(r'^([^/]+)/comm$')
+match_data_gz = re.compile(r'^([^/]+)/data_gz')
 match_status = re.compile(r'^([^/]+)/status$')
 
 
@@ -42,6 +44,11 @@ def on_message(client, userdata, msg):
 		g = match_status.match(msg.topic)
 		if g:
 			logging.debug('%s\t%s\t%d\t%d', msg.topic, msg.payload.decode('utf-8'), msg.qos, msg.retain)
+			return
+		g = match_data_gz.match(msg.topic)
+		if g:
+			val = zlib.decompress(msg.payload)
+			logging.debug('%s\t%s', msg.topic, str(val))
 			return
 		data = json.loads(msg.payload.decode('utf-8'))
 		g = match_comm.match(msg.topic)
