@@ -108,7 +108,7 @@ def on_message(client, userdata, msg):
 					if ttl and (ttl >= 0):
 						redis_rtdb.persist(dev)
 
-					logging.debug('device: %s\tInput: %s\t Value: %s', g[0], g[1], json.dumps(payload))
+					# logging.debug('device: %s\tInput: %s\t Value: %s', g[0], g[1], json.dumps(d))
 					r = redis_rtdb.hmset(dev, {
 						intput: json.dumps(d)
 					})
@@ -204,5 +204,5 @@ try:
 	# manual interface.
 	client.loop_forever(retry_first_connection=True)
 except Exception as ex:
-	logging.exception('MQTT Exeption')
+	logging.exception(ex)
 	os._exit(1)

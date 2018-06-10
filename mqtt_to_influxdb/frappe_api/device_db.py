@@ -38,7 +38,7 @@ class DeviceDB(threading.Thread):
 					device_map[device] = create_worker(db)
 
 			except Exception as ex:
-				logging.exception('Catch an exception.')
+				logging.exception(ex)
 
 			time.sleep(3 * 60)
 

@@ -143,6 +143,7 @@ def on_message(client, userdata, msg):
 				value = val
 			else:
 				value = str(value)
+			# logging.debug('[GZ]device: %s\tInput: %s\t Value: %s', g[0], g[1], value)
 			worker.append_data(name=g[1], property=prop, device=g[0], iot=devid, timestamp=payload[1], value=value, quality=payload[3])
 		return
 
@@ -164,6 +165,7 @@ def on_message(client, userdata, msg):
 						value = val
 					else:
 						value = str(value)
+					# logging.debug('[GZ]device: %s\tInput: %s\t Value: %s', g[0], g[1], value)
 					worker.append_data(name=g[1], property=prop, device=g[0], iot=devid, timestamp=d[1], value=value, quality=d[3])
 		except Exception as ex:
 			logging.exception(ex)
@@ -241,6 +243,6 @@ try:
 	# manual interface.
 	client.loop_forever(retry_first_connection=True)
 except Exception as ex:
-	logging.exception('MQTT Exeption')
+	logging.exception(ex)
 	os._exit(1)
 

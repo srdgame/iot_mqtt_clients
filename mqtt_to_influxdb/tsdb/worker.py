@@ -46,7 +46,7 @@ class Worker(threading.Thread):
 					client.write_data(points)
 					tq.task_done()
 				except Exception as ex:
-					logging.exception('Catch an exception.')
+					logging.exception(ex)
 					#tq.queue.appendleft(points) #TODO: Keep the points writing to influxdb continuely.
 
 	def append_data(self, name, property, device, iot, timestamp, value, quality):

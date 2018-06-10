@@ -56,7 +56,7 @@ class MQTTClient(threading.Thread):
 
 			mqttc.loop_forever(retry_first_connection=True)
 		except Exception as ex:
-			logging.exception('MQTT Exeption')
+			logging.exception(ex)
 			os._exit(1)
 
 	def publish(self, *args, **kwargs):
@@ -105,7 +105,7 @@ class SubClient(threading.Thread):
 			r = self.mqttc.publish(topic=topic, payload=request, qos=1, retain=False)
 			logging.debug("Sub MQTT publish result: " + str(r))
 		except Exception as ex:
-			logging.exception('Catch an exception.')
+			logging.exception(ex)
 
 	def on_mqtt_message(self, dev, action, msg):
 		try:
@@ -122,4 +122,4 @@ class SubClient(threading.Thread):
 				r = self.redis_client.set(result['id'], json.dumps(result), redis_result_expire)
 				logging.debug(str(r))
 		except Exception as ex:
-			logging.exception('Catch an exception.')
+			logging.exception(ex)
