@@ -19,7 +19,7 @@ config.read('../config.ini')
 
 
 match_comm = re.compile(r'^([^/]+)/comm$')
-match_data_gz = re.compile(r'^([^/]+)/data_gz')
+match_xxx_gz = re.compile(r'^([^/]+)/[^/]+_gz')
 match_status = re.compile(r'^([^/]+)/status$')
 
 
@@ -45,9 +45,9 @@ def on_message(client, userdata, msg):
 		if g:
 			logging.debug('%s\t%s\t%d\t%d', msg.topic, msg.payload.decode('utf-8'), msg.qos, msg.retain)
 			return
-		g = match_data_gz.match(msg.topic)
+		g = match_xxx_gz.match(msg.topic)
 		if g:
-			val = zlib.decompress(msg.payload)
+			val = zlib.decompress(msg.payload).decode('utf-8')
 			logging.debug('%s\t%s', msg.topic, str(val))
 			return
 		data = json.loads(msg.payload.decode('utf-8'))

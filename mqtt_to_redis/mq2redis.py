@@ -49,8 +49,11 @@ def on_connect(client, userdata, flags, rc):
 	client.subscribe("+/data")
 	client.subscribe("+/data_gz")
 	client.subscribe("+/apps")
+	client.subscribe("+/apps_gz")
 	client.subscribe("+/exts")
+	client.subscribe("+/exts_gz")
 	client.subscribe("+/devices")
+	client.subscribe("+/devices_gz")
 	client.subscribe("+/status")
 	client.subscribe("+/event")
 
@@ -93,8 +96,7 @@ def on_message(client, userdata, msg):
 
 	if topic == 'data_gz':
 		try:
-			payload = zlib.decompress(msg.payload)
-			data_list = json.loads(payload)
+			data_list = json.loads(zlib.decompress(msg.payload).decode('utf-8'))
 			for d in data_list:
 				g = match_data_path.match(d[0])
 				if g and msg.retain == 0:
@@ -117,19 +119,24 @@ def on_message(client, userdata, msg):
 			logging.debug('Catch an exception: %s\t%d\t%d', msg.topic, msg.qos, msg.retain)
 		return
 
-	if topic == 'apps':
-		apps = json.loads(msg.payload.decode('utf-8'))
-		logging.debug('%s/apps\t%s', devid, str(apps))
-		redis_apps.set(devid, json.dumps(apps))
+	if topic == 'apps' or topic == 'apps_gz':
+		data = msg.payload.decode('utf-8') if topic == 'apps' else zlib.decompress(msg.payload).decode('utf-8')
+		logging.debug('%s/%s\t%s', devid, topic, data)
+		# apps = json.loads(data)
+		# redis_apps.set(devid, json.dumps(apps))
+		redis_apps.set(devid, data)
 
-	if topic == 'exts':
-		apps = json.loads(msg.payload.decode('utf-8'))
-		logging.debug('%s/exts\t%s', devid, str(apps))
-		redis_exts.set(devid, json.dumps(apps))
+	if topic == 'exts' or topic == 'exts_gz':
+		data = msg.payload.decode('utf-8') if topic == 'exts' else zlib.decompress(msg.payload).decode('utf-8')
+		logging.debug('%s/%s\t%s', devid, topic, data)
+		# exts = json.loads(data)
+		# redis_exts.set(devid, json.dumps(exts))
+		redis_exts.set(devid, data)
 
-	if topic == 'devices':
-		devs = json.loads(msg.payload.decode('utf-8'))
-		logging.debug('%s/devices\t%s', devid, str(devs))
+	if topic == 'devices' or topic == 'devices_gz':
+		data = msg.payload.decode('utf-8') if topic == 'devices' else zlib.decompress(msg.payload).decode('utf-8')
+		logging.debug('%s/%s\t%s', devid, topic, data)
+		devs = json.loads(data)
 
 		ttl = redis_rel.ttl(devid)
 		if ttl and (ttl >= 0):

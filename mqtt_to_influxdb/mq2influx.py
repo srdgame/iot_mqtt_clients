@@ -105,8 +105,11 @@ def on_connect(client, userdata, flags, rc):
 	client.subscribe("+/data")
 	client.subscribe("+/data_gz")
 	client.subscribe("+/apps")
+	client.subscribe("+/apps_gz")
 	client.subscribe("+/exts")
+	client.subscribe("+/exts_gz")
 	client.subscribe("+/devices")
+	client.subscribe("+/devices_gz")
 	client.subscribe("+/status")
 	client.subscribe("+/stat")
 	client.subscribe("+/event")
@@ -149,7 +152,7 @@ def on_message(client, userdata, msg):
 
 	if topic == 'data_gz':
 		try:
-			payload = zlib.decompress(msg.payload)
+			payload = zlib.decompress(msg.payload).decode('utf-8')
 			data_list = json.loads(payload)
 			for d in data_list:
 				g = match_data_path.match(d[0])
@@ -172,21 +175,21 @@ def on_message(client, userdata, msg):
 			logging.debug('Catch an exception: %s\t%d\t%d', msg.topic, msg.qos, msg.retain)
 		return
 
-	if topic == 'apps':
-		data = msg.payload.decode('utf-8')
-		logging.debug('%s/apps\t%s', devid, data)
+	if topic == 'apps' or topic == 'apps_gz':
+		data = msg.payload.decode('utf-8') if topic == 'apps' else zlib.decompress(msg.payload).decode('utf-8')
+		logging.debug('%s/%s\t%s', devid, topic, data)
 		worker = get_worker(devid)
 		worker.append_data(name="iot_device", property="apps", device=devid, iot=devid, timestamp=time.time(), value=data, quality=0)
 
-	if topic == 'exts':
-		data = msg.payload.decode('utf-8')
-		logging.debug('%s/exts\t%s', devid, data)
+	if topic == 'exts' or topic == 'exts_gz':
+		data = msg.payload.decode('utf-8') if topic == 'exts' else zlib.decompress(msg.payload).decode('utf-8')
+		logging.debug('%s/%s\t%s', devid, topic, )
 		worker = get_worker(devid)
 		worker.append_data(name="iot_device", property="exts", device=devid, iot=devid, timestamp=time.time(), value=data, quality=0)
 
-	if topic == 'devices':
-		data = msg.payload.decode('utf-8')
-		logging.debug('%s/devices\t%s', devid, data)
+	if topic == 'devices' or topic == 'devices_gz':
+		data = msg.payload.decode('utf-8') if topic == 'devices' else zlib.decompress(msg.payload).decode('utf-8')
+		logging.debug('%s/%s\t%s', devid, topic, data)
 		worker = get_worker(devid)
 		worker.append_data(name="iot_device", property="cfg", device=devid, iot=devid, timestamp=time.time(), value=data, quality=0)
 		make_input_map(devid, json.loads(data))
