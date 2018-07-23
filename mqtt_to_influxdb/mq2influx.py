@@ -133,6 +133,9 @@ def on_message(client, userdata, msg):
 
 	if topic == 'data':
 		payload = json.loads(msg.payload.decode('utf-8'))
+		if not payload:
+			logging.warning('Decode DATA JSON Failure: %s/%s\t%s', devid, topic, msg.payload.decode('utf-8'))
+			return
 		g = match_data_path.match(payload[0])
 		if g and msg.retain == 0:
 			g = g.groups()
@@ -154,6 +157,9 @@ def on_message(client, userdata, msg):
 		try:
 			payload = zlib.decompress(msg.payload).decode('utf-8')
 			data_list = json.loads(payload)
+			if not data_list:
+				logging.warning('Decode DATA_GZ JSON Failure: %s/%s\t%s', devid, topic, payload)
+				return
 			for d in data_list:
 				g = match_data_path.match(d[0])
 				if g and msg.retain == 0:
@@ -183,7 +189,7 @@ def on_message(client, userdata, msg):
 
 	if topic == 'exts' or topic == 'exts_gz':
 		data = msg.payload.decode('utf-8') if topic == 'exts' else zlib.decompress(msg.payload).decode('utf-8')
-		logging.debug('%s/%s\t%s', devid, topic, )
+		logging.debug('%s/%s\t%s', devid, topic, data)
 		worker = get_worker(devid)
 		worker.append_data(name="iot_device", property="exts", device=devid, iot=devid, timestamp=time.time(), value=data, quality=0)
 
@@ -192,7 +198,11 @@ def on_message(client, userdata, msg):
 		logging.debug('%s/%s\t%s', devid, topic, data)
 		worker = get_worker(devid)
 		worker.append_data(name="iot_device", property="cfg", device=devid, iot=devid, timestamp=time.time(), value=data, quality=0)
-		make_input_map(devid, json.loads(data))
+		devs = json.loads(data)
+		if not devs:
+			logging.warning('Decode DEVICE_GZ JSON Failure: %s/%s\t%s', devid, topic, data)
+			return
+		make_input_map(devid, devs)
 		return
 
 	if topic == 'status':
@@ -207,6 +217,9 @@ def on_message(client, userdata, msg):
 
 	if topic == 'stat':
 		payload = json.loads(msg.payload.decode('utf-8'))
+		if not payload:
+			logging.warning('Decode STAT JSON Failure: %s/%s\t%s', devid, topic, msg.payload.decode('utf-8'))
+			return
 		g = match_stat_path.match(payload[0])
 		if g and msg.retain == 0:
 			g = g.groups()
@@ -217,6 +230,9 @@ def on_message(client, userdata, msg):
 
 	if topic == 'event':
 		payload = json.loads(msg.payload.decode('utf-8'))
+		if not payload:
+			logging.warning('Decode EVENT JSON Failure: %s/%s\t%s', devid, topic, msg.payload.decode('utf-8'))
+			return
 		if msg.retain == 0:
 			worker = get_worker(devid)
 			devsn = payload[0]

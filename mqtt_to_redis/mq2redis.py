@@ -76,6 +76,9 @@ def on_message(client, userdata, msg):
 
 	if topic == 'data':
 		payload = json.loads(msg.payload.decode('utf-8'))
+		if not payload:
+			logging.warning('Decode DATA JSON Failure: %s/%s\t%s', devid, topic, msg.payload.decode('utf-8'))
+			return
 		g = match_data_path.match(payload[0])
 		if g and msg.retain == 0:
 			g = g.groups()
@@ -96,7 +99,11 @@ def on_message(client, userdata, msg):
 
 	if topic == 'data_gz':
 		try:
-			data_list = json.loads(zlib.decompress(msg.payload).decode('utf-8'))
+			payload = zlib.decompress(msg.payload).decode('utf-8')
+			data_list = json.loads(payload)
+			if not data_list:
+				logging.warning('Decode DATA_GZ JSON Failure: %s/%s\t%s', devid, topic, payload)
+				return
 			for d in data_list:
 				g = match_data_path.match(d[0])
 				if g and msg.retain == 0:
@@ -137,6 +144,9 @@ def on_message(client, userdata, msg):
 		data = msg.payload.decode('utf-8') if topic == 'devices' else zlib.decompress(msg.payload).decode('utf-8')
 		logging.debug('%s/%s\t%s', devid, topic, data)
 		devs = json.loads(data)
+		if not devs:
+			logging.warning('Decode DEVICE_GZ JSON Failure: %s/%s\t%s', devid, topic, data)
+			return
 
 		ttl = redis_rel.ttl(devid)
 		if ttl and (ttl >= 0):
