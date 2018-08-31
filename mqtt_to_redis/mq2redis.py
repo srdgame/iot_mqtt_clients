@@ -159,10 +159,12 @@ def on_message(client, userdata, msg):
 			if devs.get(dev) is None:
 				redis_cfg.expire(dev, redis_offline_expire)
 				redis_rtdb.expire(dev, redis_offline_expire)
+				redis_rel.expire('PARENT_' + dev, redis_offline_expire)
 
 		for dev in devs:
 			redis_cfg.set(dev, json.dumps(devs[dev]))
 			redis_rel.lpush(devid, dev)
+			redis_rel.set('PARENT_' + dev, devid)
 			''' MQTT authed by frappe's IOT Device, so we do not need to create device
 			if dev == devid:
 				worker.create_device(devid, devs[devid])
@@ -184,6 +186,7 @@ def on_message(client, userdata, msg):
 			for dev in devkeys:
 				redis_cfg.expire(dev, redis_offline_expire)
 				redis_rtdb.expire(dev, redis_offline_expire)
+				redis_rel.expire('PARENT_' + dev, redis_offline_expire)
 
 		return
 
