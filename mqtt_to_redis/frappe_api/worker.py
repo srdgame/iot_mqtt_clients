@@ -127,7 +127,7 @@ class DeviceEvent(TaskBase):
 		event = json.loads(self.event)
 		timestamp = datetime.datetime.utcfromtimestamp(event[2]).strftime(DATETIME_FORMAT)
 
-		data= json.dumps({
+		data = {
 			"device": self.sn,
 			"source": event[0],
 			"level": event[1].get("level") or 0,
@@ -136,8 +136,8 @@ class DeviceEvent(TaskBase):
 			"data": json.dumps(event[1].get("data")),
 			"time": timestamp,
 			"wechat_notify": 1,
-		})
+		}
 
-		r = session.post(api_srv + ".add_device_event", data=data)
+		r = session.post(api_srv + ".add_device_event", data=json.dumps(data))
 		if r.status_code != 200:
 			logging.warning(r.text)
