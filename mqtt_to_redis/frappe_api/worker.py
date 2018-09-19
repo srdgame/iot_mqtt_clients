@@ -34,7 +34,10 @@ class Worker(threading.Thread):
 		while not self.thread_stop:
 			try:
 				task = q.get()
-				task.run()
+				try:
+					task.run()
+				except Exception as ex:
+					logging.exception(ex)
 				q.task_done()
 			except queue.Empty:
 				logging.error("This is empty Exeption!")
@@ -105,12 +108,17 @@ class UpdateDeviceStatus(TaskBase):
 		self.status = status
 
 	def run(self):
-		session = requests.session()
-		init_request_headers(session.headers)
+		try:
+			session = requests.session()
+			init_request_headers(session.headers)
 
-		r = session.post(api_srv + ".update_device_status", data=json.dumps({"sn": self.sn,	"status": self.status}))
-		if r.status_code != 200:
-			logging.warning(r.text)
+			r = session.post(api_srv + ".update_device_status", data=json.dumps({"sn": self.sn,	"status": self.status}))
+			if r.status_code != 200:
+				logging.warning(r.text)
+		except ConnectionError as err:
+			logging.exception(err)
+		except Exception as ex:
+			logging.exception(ex)
 
 DATE_FORMAT = "%Y-%m-%d"
 TIME_FORMAT = "%H:%M:%S.%f"
