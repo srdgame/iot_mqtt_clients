@@ -5,8 +5,8 @@ import redis
 import logging
 
 
-def init_request_headers(headers):
-	headers['HDB-AuthorizationCode'] = '12312313aaa'
+def init_request_headers(headers, auth_code):
+	headers['HDB-AuthorizationCode'] = auth_code or '12312313aaa'
 	#headers['Content-Type'] = 'application/json'
 	headers['Accept'] = 'application/json'
 
@@ -18,12 +18,14 @@ class DeviceDB(threading.Thread):
 		self.device_map = device_map
 		self.create_worker = create_worker
 
-		session = requests.session()
-		# session.auth = (username, passwd)
-		init_request_headers(session.headers)
-		self.session = session
 		self.redis_db = redis.Redis.from_url(redis_srv + "/8") # device influxdb database
 		self.api_srv = config.get('frappe', 'url', fallback='http://127.0.0.1:8000') + "/api/method/iot.hdb_api"
+		self.auth_code = config.get('frappe', 'auth_code', fallback='12312313aaa')
+
+		session = requests.session()
+		# session.auth = (username, passwd)
+		init_request_headers(session.headers, self.auth_code)
+		self.session = session
 
 	def run(self):
 		device_map = self.device_map

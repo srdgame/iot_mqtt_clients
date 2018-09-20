@@ -38,9 +38,9 @@ def create_worker(db):
 		worker.start()
 		workers[db] = worker
 	return worker
-
-ddb = DeviceDB(redis_srv, device_map, create_worker, config)
-ddb.start()
+#
+# ddb = DeviceDB(redis_srv, device_map, create_worker, config)
+# ddb.start()
 
 
 def get_worker(iot_device):
