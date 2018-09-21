@@ -36,8 +36,6 @@ data_queue = deque()
 match_topic = re.compile(r'^([^/]+)/(.+)$')
 match_data_path = re.compile(r'^([^/]+)/(.+)$')
 
-device_status = {}
-
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
@@ -71,38 +69,34 @@ def on_message(client, userdata, msg):
 	if len(g) < 2:
 		return
 
-	devid = g[0]
+	gateid = g[0]
 	topic = g[1]
 
 	if topic == 'data':
-		payload = json.loads(msg.payload.decode('utf-8'))
-		if not payload:
-			logging.warning('Decode DATA JSON Failure: %s/%s\t%s', devid, topic, msg.payload.decode('utf-8'))
+		data = json.loads(msg.payload.decode('utf-8'))
+		if not data:
+			logging.warning('Decode DATA JSON Failure: %s/%s\t%s', gateid, topic, msg.payload.decode('utf-8'))
 			return
-		g = match_data_path.match(payload[0])
+		g = match_data_path.match(data[0])
 		if g and msg.retain == 0:
 			g = g.groups()
 			dev = g[0]
 			intput = g[1]
 			# pop input key
-			payload.pop(0)
-
-			ttl = redis_rtdb.ttl(dev)
-			if ttl and (ttl >= 0):
-				redis_rtdb.persist(dev)
+			data.pop(0)
 
 			# logging.debug('device: %s\tInput: %s\t Value: %s', g[0], g[1], json.dumps(payload))
 			r = redis_rtdb.hmset(dev, {
-				intput: json.dumps(payload)
+				intput: json.dumps(data)
 			})
 		return
 
 	if topic == 'data_gz':
 		try:
-			payload = zlib.decompress(msg.payload).decode('utf-8')
-			data_list = json.loads(payload)
+			data = zlib.decompress(msg.payload).decode('utf-8')
+			data_list = json.loads(data)
 			if not data_list:
-				logging.warning('Decode DATA_GZ JSON Failure: %s/%s\t%s', devid, topic, payload)
+				logging.warning('Decode DATA_GZ JSON Failure: %s/%s\t%s', gateid, topic, data)
 				return
 			for d in data_list:
 				g = match_data_path.match(d[0])
@@ -112,10 +106,6 @@ def on_message(client, userdata, msg):
 					intput = g[1]
 					# pop input key
 					d.pop(0)
-
-					ttl = redis_rtdb.ttl(dev)
-					if ttl and (ttl >= 0):
-						redis_rtdb.persist(dev)
 
 					# logging.debug('device: %s\tInput: %s\t Value: %s', g[0], g[1], json.dumps(d))
 					r = redis_rtdb.hmset(dev, {
@@ -128,71 +118,76 @@ def on_message(client, userdata, msg):
 
 	if topic == 'apps' or topic == 'apps_gz':
 		data = msg.payload.decode('utf-8') if topic == 'apps' else zlib.decompress(msg.payload).decode('utf-8')
-		logging.debug('%s/%s\t%s', devid, topic, data)
+		logging.debug('%s/%s\t%s', gateid, topic, data)
 		# apps = json.loads(data)
-		# redis_apps.set(devid, json.dumps(apps))
-		redis_apps.set(devid, data)
+		# redis_apps.set(gateid, json.dumps(apps))
+		redis_apps.set(gateid, data)
+		return
 
 	if topic == 'exts' or topic == 'exts_gz':
 		data = msg.payload.decode('utf-8') if topic == 'exts' else zlib.decompress(msg.payload).decode('utf-8')
-		logging.debug('%s/%s\t%s', devid, topic, data)
+		logging.debug('%s/%s\t%s', gateid, topic, data)
 		# exts = json.loads(data)
-		# redis_exts.set(devid, json.dumps(exts))
-		redis_exts.set(devid, data)
+		# redis_exts.set(gateid, json.dumps(exts))
+		redis_exts.set(gateid, data)
+		return
 
 	if topic == 'devices' or topic == 'devices_gz':
 		data = msg.payload.decode('utf-8') if topic == 'devices' else zlib.decompress(msg.payload).decode('utf-8')
-		logging.debug('%s/%s\t%s', devid, topic, data)
+		logging.debug('%s/%s\t%s', gateid, topic, data)
 		devs = json.loads(data)
 		if not devs:
-			logging.warning('Decode DEVICE_GZ JSON Failure: %s/%s\t%s', devid, topic, data)
+			logging.warning('Decode DEVICE_GZ JSON Failure: %s/%s\t%s', gateid, topic, data)
 			return
 
-		ttl = redis_rel.ttl(devid)
-		if ttl and (ttl >= 0):
-			redis_rel.persist(devid)
-		devkeys = redis_rel.lrange(devid, 0, 1000)
-		redis_rel.ltrim(devid, 0, -1000)
+		devkeys = redis_rel.lrange(gateid, 0, 1000)
+		redis_rel.ltrim(gateid, 0, -1000)
 
 		## Cleanup cfg and rtdb
-		for dev in devkeys:
-			if devs.get(dev) is None:
-				redis_cfg.expire(dev, redis_offline_expire)
-				redis_rtdb.expire(dev, redis_offline_expire)
-				redis_rel.expire('PARENT_{0}'.format(dev), redis_offline_expire)
+		for devid in devkeys:
+			if devs.get(devid) is None:
+				redis_cfg.expire(devid, redis_offline_expire)
+				redis_rtdb.expire(devid, redis_offline_expire)
+				redis_rel.expire('PARENT_{0}'.format(devid), redis_offline_expire)
 
-		for dev in devs:
-			redis_cfg.set(dev, json.dumps(devs[dev]))
-			redis_rel.lpush(devid, dev)
-			redis_rel.set('PARENT_{0}'.format(dev), devid)
-			''' MQTT authed by frappe's IOT Device, so we do not need to create device
-			if dev == devid:
-				worker.create_device(devid, devs[devid])
-			'''
+		for devid in devs:
+			redis_cfg.persist(devid)
+			redis_cfg.set(devid, json.dumps(devs[devid]))
+
+			redis_rel.lpush(gateid, devid)
+
+			redis_rtdb.persist(devid)
+
+			redis_rel.persist('PARENT_{0}'.format(devid))
+			redis_rel.set('PARENT_{0}'.format(devid), gateid)
+
 		return
 
 	if topic == 'status':
 		status = msg.payload.decode('utf-8')
-		redis_sts.set(devid, status)
-
-		device_status[devid] = status
-		worker.update_device_status(devid, status)
+		redis_sts.set(gateid, status)
+		worker.update_device_status(gateid, status)
 		if status == 'OFFLINE':
-			redis_sts.expire(devid, redis_offline_expire)
-			redis_rel.expire(devid, redis_offline_expire)
-			redis_apps.expire(devid, redis_offline_expire)
-			redis_exts.expire(devid, redis_offline_expire)
-			devkeys = redis_rel.lrange(devid, 0, 1000)
-			for dev in devkeys:
-				redis_cfg.expire(dev, redis_offline_expire)
-				redis_rtdb.expire(dev, redis_offline_expire)
-				redis_rel.expire('PARENT_{0}'.format(dev), redis_offline_expire)
+			redis_sts.expire(gateid, redis_offline_expire)
+			redis_rel.expire(gateid, redis_offline_expire)
+			redis_apps.expire(gateid, redis_offline_expire)
+			redis_exts.expire(gateid, redis_offline_expire)
+			devkeys = redis_rel.lrange(gateid, 0, 1000)
+			for devid in devkeys:
+				redis_cfg.expire(devid, redis_offline_expire)
+				redis_rtdb.expire(devid, redis_offline_expire)
+				redis_rel.expire('PARENT_{0}'.format(devid), redis_offline_expire)
+		else:
+			redis_sts.persist(gateid)
+			redis_rel.persist(gateid)
+			redis_apps.persist(gateid)
+			redis_exts.persist(gateid)
 
 		return
 
 	if topic == 'event':
 		event = msg.payload.decode('utf-8')
-		worker.device_event(devid, event)
+		worker.device_event(gateid, event)
 		return
 
 
