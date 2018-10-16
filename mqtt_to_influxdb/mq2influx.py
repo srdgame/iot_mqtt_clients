@@ -112,6 +112,7 @@ def on_connect(client, userdata, flags, rc):
 	client.subscribe("+/devices_gz")
 	client.subscribe("+/status")
 	client.subscribe("+/stat")
+	client.subscribe("+/stat_gz")
 	client.subscribe("+/event")
 
 
@@ -226,6 +227,25 @@ def on_message(client, userdata, msg):
 			worker = get_worker(devid)
 			value=float(payload[2])
 			worker.append_data(name='_stat_'+g[1], property=g[2], device=g[0], iot=devid, timestamp=payload[1], value=value, quality=0)
+		return
+
+	if topic == 'stat_gz':
+		try:
+			payload = zlib.decompress(msg.payload).decode('utf-8')
+			stat_list = json.loads(payload)
+			if not stat_list:
+				logging.warning('Decode STAT_GZ JSON Failure: %s/%s\t%s', devid, topic, payload)
+				return
+			for d in stat_list:
+				g = match_stat_path.match(d[0])
+				if g and msg.retain == 0:
+					g = g.groups()
+					worker = get_worker(devid)
+					value=float(d[2])
+					worker.append_data(name='_stat_'+g[1], property=g[2], device=g[0], iot=devid, timestamp=d[1], value=value, quality=0)
+		except Exception as ex:
+			logging.exception(ex)
+			logging.debug('Catch an exception: %s\t%d\t%d', msg.topic, msg.qos, msg.retain)
 		return
 
 	if topic == 'event':
