@@ -32,7 +32,6 @@ redis_rtdb = redis.Redis.from_url(redis_srv+"/12") # device real-time data
 ''' Set all data be expired after device offline '''
 redis_offline_expire = 3600 * 24 * 7
 
-data_queue = deque()
 match_topic = re.compile(r'^([^/]+)/(.+)$')
 match_data_path = re.compile(r'^([^/]+)/(.+)$')
 
