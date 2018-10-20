@@ -77,7 +77,7 @@ class SubClient(threading.Thread):
 		mqttc.start()
 		self.mqttc = mqttc
 
-		redis_client = redis.Redis.from_url(self.srv + "/7")
+		redis_client = redis.Redis.from_url(self.srv + "/7", decode_responses=True)
 		ps = redis_client.pubsub()
 		ps.subscribe(['device_app', 'device_sys', 'device_output', 'device_command'])
 		self.redis_client = redis_client

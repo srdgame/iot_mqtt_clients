@@ -18,7 +18,7 @@ class DeviceDB(threading.Thread):
 		self.device_map = device_map
 		self.create_worker = create_worker
 
-		self.redis_db = redis.Redis.from_url(redis_srv + "/8") # device influxdb database
+		self.redis_db = redis.Redis.from_url(redis_srv + "/8", decode_responses=True) # device influxdb database
 		self.api_srv = config.get('frappe', 'url', fallback='http://127.0.0.1:8000') + "/api/method/iot.hdb_api"
 		self.auth_code = config.get('frappe', 'auth_code', fallback='12312313aaa')
 

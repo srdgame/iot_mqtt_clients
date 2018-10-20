@@ -25,7 +25,7 @@ config = ConfigParser()
 config.read('../config.ini')
 
 redis_srv = config.get('redis', 'url', fallback='redis://127.0.0.1:6379')
-redis_db = redis.Redis.from_url(redis_srv + "/8") # device influxdb database
+redis_db = redis.Redis.from_url(redis_srv + "/8", decode_responses=True) # device influxdb database
 
 workers = {}
 device_map = {}
@@ -49,8 +49,6 @@ def get_worker(iot_device):
 		db = redis_db.get(iot_device)
 		if not db:
 			db = "example"
-		else:
-			db = db.decode('utf-8')
 		worker = create_worker(db)
 		device_map[iot_device] = worker
 	return worker
