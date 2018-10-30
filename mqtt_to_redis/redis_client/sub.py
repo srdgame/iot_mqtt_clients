@@ -85,7 +85,7 @@ class SubClient(threading.Thread):
 
 		for item in ps.listen():
 			if item['type'] == 'message':
-				self.on_redis_message(item['channel'].decode('utf-8'), item['data'].decode('utf-8'))
+				self.on_redis_message(item['channel'], item['data'])
 
 	def on_redis_message(self, channel, msg):
 		try:
