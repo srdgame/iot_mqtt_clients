@@ -145,20 +145,18 @@ def on_message(client, userdata, msg):
 		## Cleanup cfg and rtdb
 		for devid in devkeys:
 			if devs.get(devid) is None:
+				redis_rel.expire('PARENT_{0}'.format(devid), redis_offline_expire)
 				redis_cfg.expire(devid, redis_offline_expire)
 				redis_rtdb.expire(devid, redis_offline_expire)
-				redis_rel.expire('PARENT_{0}'.format(devid), redis_offline_expire)
 
 		for devid in devs:
-			redis_cfg.persist(devid)
-			redis_cfg.set(devid, json.dumps(devs[devid]))
-
 			redis_rel.lpush(gateid, devid)
-
-			redis_rtdb.persist(devid)
-
 			redis_rel.persist('PARENT_{0}'.format(devid))
 			redis_rel.set('PARENT_{0}'.format(devid), gateid)
+
+			redis_cfg.persist(devid)
+			redis_cfg.set(devid, json.dumps(devs[devid]))
+			redis_rtdb.persist(devid)
 
 		return
 
@@ -181,6 +179,9 @@ def on_message(client, userdata, msg):
 			redis_rel.persist(gateid)
 			redis_apps.persist(gateid)
 			redis_exts.persist(gateid)
+			devkeys = redis_rel.lrange(gateid, 0, 1000)
+			for devid in devkeys:
+				redis_cfg.persist(devid)
 
 		return
 
