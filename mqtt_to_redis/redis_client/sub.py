@@ -20,7 +20,7 @@ def on_connect(client, userdata, flags, rc):
 
 
 def on_disconnect(client, userdata, rc):
-	logging.info("Sub MQTT Disconnect with result code "+str(rc))
+	logging.error("Sub MQTT Disconnect with result code "+str(rc))
 
 
 # The callback for when a PUBLISH message is received from the server.
