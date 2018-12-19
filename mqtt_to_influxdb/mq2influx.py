@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 import re
 import os
+import sys
 import time
 import json
 import redis
@@ -10,12 +11,18 @@ import zlib
 from configparser import ConfigParser
 import paho.mqtt.client as mqtt
 from tsdb.worker import Worker
-from frappe_api.device_db import DeviceDB
+# from frappe_api.device_db import DeviceDB
 
 
-logging.basicConfig(level=logging.DEBUG,
-                format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-                datefmt='%a, %d %b %Y %H:%M:%S')
+console_out = logging.StreamHandler(sys.stdout)
+console_out.setLevel(logging.DEBUG)
+console_err = logging.StreamHandler(sys.stderr)
+console_err.setLevel(logging.ERROR)
+logging_handlers = [console_out, console_err]
+logging_format = '%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s'
+logging_datefmt = '%a, %d %b %Y %H:%M:%S'
+logging.basicConfig(level=logging.DEBUG, format=logging_format, datefmt=logging_datefmt, handlers=logging_handlers)
+
 
 match_topic = re.compile(r'^([^/]+)/(.+)$')
 match_data_path = re.compile(r'^([^/]+)/([^/]+)/(.+)$')

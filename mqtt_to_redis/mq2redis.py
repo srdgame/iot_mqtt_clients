@@ -2,20 +2,26 @@
 from __future__ import unicode_literals
 import re
 import os
+import sys
 import json
 import redis
 import logging
 import zlib
-from collections import deque
 from configparser import ConfigParser
 import paho.mqtt.client as mqtt
 from frappe_api.worker import Worker
 from redis_client.sub import SubClient
 
 
-logging.basicConfig(level=logging.DEBUG,
-                format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-                datefmt='%a, %d %b %Y %H:%M:%S')
+console_out = logging.StreamHandler(sys.stdout)
+console_out.setLevel(logging.DEBUG)
+console_err = logging.StreamHandler(sys.stderr)
+console_err.setLevel(logging.ERROR)
+logging_handlers = [console_out, console_err]
+logging_format = '%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s'
+logging_datefmt = '%a, %d %b %Y %H:%M:%S'
+logging.basicConfig(level=logging.DEBUG, format=logging_format, datefmt=logging_datefmt, handlers=logging_handlers)
+
 
 config = ConfigParser()
 config.read('../config.ini')

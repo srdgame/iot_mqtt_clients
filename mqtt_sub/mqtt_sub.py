@@ -1,6 +1,7 @@
 
 from __future__ import unicode_literals
 import re
+import sys
 import base64
 import json
 import binascii
@@ -10,9 +11,15 @@ import paho.mqtt.client as mqtt
 from configparser import ConfigParser
 
 
-logging.basicConfig(level=logging.DEBUG,
-                format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-                datefmt='%a, %d %b %Y %H:%M:%S')
+console_out = logging.StreamHandler(sys.stdout)
+console_out.setLevel(logging.DEBUG)
+console_err = logging.StreamHandler(sys.stderr)
+console_err.setLevel(logging.ERROR)
+logging_handlers = [console_out, console_err]
+logging_format = '%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s'
+logging_datefmt = '%a, %d %b %Y %H:%M:%S'
+logging.basicConfig(level=logging.DEBUG, format=logging_format, datefmt=logging_datefmt, handlers=logging_handlers)
+
 
 config = ConfigParser()
 config.read('../config.ini')
@@ -77,7 +84,7 @@ client.on_subscribe = on_subscribe
 
 mqtt_host = config.get('mqtt', 'host', fallback='127.0.0.1')
 mqtt_port = config.getint('mqtt', 'port', fallback=1883)
-mqtt_keepalive = config.getint('mqtt', 'port', fallback=60)
+mqtt_keepalive = config.getint('mqtt', 'keepalive', fallback=60)
 client.connect(mqtt_host, mqtt_port, mqtt_keepalive)
 
 
