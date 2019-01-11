@@ -16,6 +16,11 @@ redis_result_expire = 60 * 60 * 24 # in seconds  (24 hours)
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
 	logging.info("Sub MQTT Connected with result code "+str(rc))
+
+	if rc != 0:
+		return
+
+	logging.info("Sub MQTT Subscribe topics")
 	client.subscribe("+/result/#")
 
 

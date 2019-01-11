@@ -46,6 +46,11 @@ match_data_path = re.compile(r'^([^/]+)/(.+)$')
 def on_connect(client, userdata, flags, rc):
 	logging.info("Main MQTT Connected with result code "+str(rc))
 
+	if rc != 0:
+		return
+
+	logging.info("Main MQTT Subscribe topics")
+
 	# Subscribing in on_connect() means that if we lose the connection and
 	# reconnect then subscriptions will be renewed.
 	#client.subscribe("$SYS/#")

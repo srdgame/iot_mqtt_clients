@@ -102,10 +102,14 @@ def make_input_map(iot_device, cfg):
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
-	logging.info("Connected with result code "+str(rc))
+	logging.info("MQTT Connected with result code "+str(rc))
 
 	# Subscribing in on_connect() means that if we lose the connection and
 	# reconnect then subscriptions will be renewed.
+	if rc != 0:
+		return
+
+	logging.info("MQTT Subscribe topics")
 	#client.subscribe("$SYS/#")
 	client.subscribe("+/data")
 	client.subscribe("+/data_gz")
