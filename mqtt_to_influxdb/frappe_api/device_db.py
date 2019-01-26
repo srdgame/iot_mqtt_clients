@@ -12,6 +12,7 @@ def init_request_headers(headers, auth_code):
 
 
 class DeviceDB(threading.Thread):
+	""" def __init__(self, redis_srv, device_map, create_worker, config): """
 	def __init__(self, redis_srv, device_map, create_worker, config):
 		threading.Thread.__init__(self)
 		self.thread_stop = False
@@ -19,8 +20,10 @@ class DeviceDB(threading.Thread):
 		self.create_worker = create_worker
 
 		self.redis_db = redis.Redis.from_url(redis_srv + "/8", decode_responses=True) # device influxdb database
+		'''
 		self.api_srv = config.get('frappe', 'url', fallback='http://127.0.0.1:8000') + "/api/method/iot.hdb_api"
 		self.auth_code = config.get('frappe', 'auth_code', fallback='12312313aaa')
+		'''
 
 		session = requests.session()
 		# session.auth = (username, passwd)
@@ -35,8 +38,11 @@ class DeviceDB(threading.Thread):
 		while not self.thread_stop:
 			try:
 				for device in self.device_map:
+					'''
 					db = self.get_db(device)
 					redis_db.set(device, db)
+					'''
+					db = redis_db.get(device)
 					device_map[device] = create_worker(db)
 
 			except Exception as ex:
@@ -47,6 +53,7 @@ class DeviceDB(threading.Thread):
 	def stop(self):
 		self.thread_stop = True
 
+	'''
 	def get_db(self, device):
 		r = self.session.get(self.api_srv + ".get_device_db", params={"sn": device})
 		if r.status_code != 200:
@@ -55,4 +62,4 @@ class DeviceDB(threading.Thread):
 		db = r.json()
 		logging.debug('%s\t%s\t%s', str(time.time()), device, db)
 		return db.get("message") or "example"
-
+	'''

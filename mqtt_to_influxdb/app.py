@@ -11,7 +11,7 @@ import zlib
 from configparser import ConfigParser
 import paho.mqtt.client as mqtt
 from tsdb.worker import Worker
-# from frappe_api.device_db import DeviceDB
+from frappe_api.device_db import DeviceDB
 
 
 console_out = logging.StreamHandler(sys.stdout)
@@ -45,9 +45,10 @@ def create_worker(db):
 		worker.start()
 		workers[db] = worker
 	return worker
-#
-# ddb = DeviceDB(redis_srv, device_map, create_worker, config)
-# ddb.start()
+
+
+ddb = DeviceDB(redis_srv, device_map, create_worker, config)
+ddb.start()
 
 
 def get_worker(iot_device):
