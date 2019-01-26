@@ -23,12 +23,12 @@ class DeviceDB(threading.Thread):
 		'''
 		self.api_srv = config.get('frappe', 'url', fallback='http://127.0.0.1:8000') + "/api/method/iot.hdb_api"
 		self.auth_code = config.get('frappe', 'auth_code', fallback='12312313aaa')
-		'''
 
 		session = requests.session()
 		# session.auth = (username, passwd)
 		init_request_headers(session.headers, self.auth_code)
 		self.session = session
+		'''
 
 	def run(self):
 		device_map = self.device_map
