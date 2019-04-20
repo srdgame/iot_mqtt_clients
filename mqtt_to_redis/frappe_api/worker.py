@@ -11,9 +11,10 @@ from configparser import ConfigParser
 config = ConfigParser()
 config.read('../config.ini')
 api_srv = config.get('frappe', 'url', fallback='http://127.0.0.1:8000') + "/api/method/iot.hdb_api"
+auth_code = config.get('frappe', 'auth_code', fallback='12312313aaa')
 
 def init_request_headers(headers):
-	headers['HDB-AuthorizationCode'] = '12312313aaa'
+	headers['HDB-AuthorizationCode'] = auth_code
 	headers['Content-Type'] = 'application/json'
 	headers['Accept'] = 'application/json'
 
