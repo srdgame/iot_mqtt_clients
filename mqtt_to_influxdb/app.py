@@ -114,6 +114,7 @@ def on_connect(client, userdata, flags, rc):
 	#client.subscribe("$SYS/#")
 	client.subscribe("+/data")
 	client.subscribe("+/data_gz")
+	client.subscribe("+/cached_data_gz")
 	client.subscribe("+/apps")
 	client.subscribe("+/apps_gz")
 	client.subscribe("+/exts")
@@ -164,7 +165,7 @@ def on_message(client, userdata, msg):
 			worker.append_data(name=g[1], property=prop, device=g[0], iot=devid, timestamp=payload[1], value=value, quality=payload[3])
 		return
 
-	if topic == 'data_gz':
+	if topic == 'data_gz' or topic == 'cached_data_gz':
 		try:
 			payload = zlib.decompress(msg.payload).decode('utf-8')
 			data_list = json.loads(payload)
@@ -272,26 +273,28 @@ def on_message(client, userdata, msg):
 		return
 
 
-client = mqtt.Client(client_id="SYS_MQTT_TO_INFLUXDB")
-client.username_pw_set("root", "bXF0dF9pb3RfYWRtaW4K")
-client.on_connect = on_connect
-client.on_disconnect = on_disconnect
-client.on_message = on_message
+if __name__ == '__main__':
 
-mqtt_host = config.get('mqtt', 'host', fallback='127.0.0.1')
-mqtt_port = config.getint('mqtt', 'port', fallback=1883)
-mqtt_keepalive = config.getint('mqtt', 'port', fallback=60)
+	client = mqtt.Client(client_id="SYS_MQTT_TO_INFLUXDB")
+	client.username_pw_set("root", "bXF0dF9pb3RfYWRtaW4K")
+	client.on_connect = on_connect
+	client.on_disconnect = on_disconnect
+	client.on_message = on_message
 
-try:
-	logging.debug('MQTT Connect to %s:%d', mqtt_host, mqtt_port)
-	client.connect_async(mqtt_host, mqtt_port, mqtt_keepalive)
+	mqtt_host = config.get('mqtt', 'host', fallback='127.0.0.1')
+	mqtt_port = config.getint('mqtt', 'port', fallback=1883)
+	mqtt_keepalive = config.getint('mqtt', 'port', fallback=60)
 
-	# Blocking call that processes network traffic, dispatches callbacks and
-	# handles reconnecting.
-	# Other loop*() functions are available that give a threaded interface and a
-	# manual interface.
-	client.loop_forever(retry_first_connection=True)
-except Exception as ex:
-	logging.exception(ex)
-	os._exit(1)
+	try:
+		logging.debug('MQTT Connect to %s:%d', mqtt_host, mqtt_port)
+		client.connect_async(mqtt_host, mqtt_port, mqtt_keepalive)
+
+		# Blocking call that processes network traffic, dispatches callbacks and
+		# handles reconnecting.
+		# Other loop*() functions are available that give a threaded interface and a
+		# manual interface.
+		client.loop_forever(retry_first_connection=True)
+	except Exception as ex:
+		logging.exception(ex)
+		os._exit(1)
 

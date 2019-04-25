@@ -73,23 +73,25 @@ def on_subscribe(client, userdata, mid, granted_qos):
 	logging.info('ON_SUBSCRIBE %d %s', mid, str(granted_qos))
 
 
-# Listen on MQTT forwarding real-time data into redis, and forwarding configuration to frappe.
-client = mqtt.Client(client_id="SYS_MQTT_SUB_CLIENT")
-client.username_pw_set("root", "bXF0dF9pb3RfYWRtaW4K")
-#client.username_pw_set("changch84@163.com", "pa88word")
-client.on_connect = on_connect
-client.on_disconnect = on_disconnect
-client.on_message = on_message
-client.on_subscribe = on_subscribe
+if __name__ == '__main__':
 
-mqtt_host = config.get('mqtt', 'host', fallback='127.0.0.1')
-mqtt_port = config.getint('mqtt', 'port', fallback=1883)
-mqtt_keepalive = config.getint('mqtt', 'keepalive', fallback=60)
-client.connect(mqtt_host, mqtt_port, mqtt_keepalive)
+	# Listen on MQTT forwarding real-time data into redis, and forwarding configuration to frappe.
+	client = mqtt.Client(client_id="SYS_MQTT_SUB_CLIENT")
+	client.username_pw_set("root", "bXF0dF9pb3RfYWRtaW4K")
+	#client.username_pw_set("changch84@163.com", "pa88word")
+	client.on_connect = on_connect
+	client.on_disconnect = on_disconnect
+	client.on_message = on_message
+	client.on_subscribe = on_subscribe
+
+	mqtt_host = config.get('mqtt', 'host', fallback='127.0.0.1')
+	mqtt_port = config.getint('mqtt', 'port', fallback=1883)
+	mqtt_keepalive = config.getint('mqtt', 'keepalive', fallback=60)
+	client.connect(mqtt_host, mqtt_port, mqtt_keepalive)
 
 
-# Blocking call that processes network traffic, dispatches callbacks and
-# handles reconnecting.
-# Other loop*() functions are available that give a threaded interface and a
-# manual interface.
-client.loop_forever()
+	# Blocking call that processes network traffic, dispatches callbacks and
+	# handles reconnecting.
+	# Other loop*() functions are available that give a threaded interface and a
+	# manual interface.
+	client.loop_forever()

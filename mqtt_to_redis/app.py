@@ -202,33 +202,35 @@ def on_message(client, userdata, msg):
 		return
 
 
-# Frappe HTTP API Worker for async call
-worker = Worker()
-worker.start()
-# Redis MQTT message broker
-sub = SubClient(redis_srv, config)
-sub.start()
+if __name__ == '__main__':
 
-# Listen on MQTT forwarding real-time data into redis, and forwarding configuration to frappe.
-client = mqtt.Client(client_id="SYS_MQTT_TO_REDIS")
-client.username_pw_set("root", "bXF0dF9pb3RfYWRtaW4K")
-client.on_connect = on_connect
-client.on_disconnect = on_disconnect
-client.on_message = on_message
+	# Frappe HTTP API Worker for async call
+	worker = Worker()
+	worker.start()
+	# Redis MQTT message broker
+	sub = SubClient(redis_srv, config)
+	sub.start()
 
-mqtt_host = config.get('mqtt', 'host', fallback='127.0.0.1')
-mqtt_port = config.getint('mqtt', 'port', fallback=1883)
-mqtt_keepalive = config.getint('mqtt', 'keepalive', fallback=60)
+	# Listen on MQTT forwarding real-time data into redis, and forwarding configuration to frappe.
+	client = mqtt.Client(client_id="SYS_MQTT_TO_REDIS")
+	client.username_pw_set("root", "bXF0dF9pb3RfYWRtaW4K")
+	client.on_connect = on_connect
+	client.on_disconnect = on_disconnect
+	client.on_message = on_message
 
-try:
-	logging.debug('MQTT Connect to %s:%d', mqtt_host, mqtt_port)
-	client.connect_async(mqtt_host, mqtt_port, mqtt_keepalive)
+	mqtt_host = config.get('mqtt', 'host', fallback='127.0.0.1')
+	mqtt_port = config.getint('mqtt', 'port', fallback=1883)
+	mqtt_keepalive = config.getint('mqtt', 'keepalive', fallback=60)
 
-	# Blocking call that processes network traffic, dispatches callbacks and
-	# handles reconnecting.
-	# Other loop*() functions are available that give a threaded interface and a
-	# manual interface.
-	client.loop_forever(retry_first_connection=True)
-except Exception as ex:
-	logging.exception(ex)
-	os._exit(1)
+	try:
+		logging.debug('MQTT Connect to %s:%d', mqtt_host, mqtt_port)
+		client.connect_async(mqtt_host, mqtt_port, mqtt_keepalive)
+
+		# Blocking call that processes network traffic, dispatches callbacks and
+		# handles reconnecting.
+		# Other loop*() functions are available that give a threaded interface and a
+		# manual interface.
+		client.loop_forever(retry_first_connection=True)
+	except Exception as ex:
+		logging.exception(ex)
+		os._exit(1)
