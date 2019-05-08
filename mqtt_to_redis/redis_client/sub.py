@@ -7,6 +7,7 @@ import json
 import re
 import os
 import logging
+import time
 import paho.mqtt.client as mqtt
 
 
@@ -82,15 +83,23 @@ class SubClient(threading.Thread):
 		mqttc.start()
 		self.mqttc = mqttc
 
-		redis_client = redis.Redis.from_url(self.srv + "/7", decode_responses=True)
-		ps = redis_client.pubsub()
-		ps.subscribe(['device_app', 'device_sys', 'device_output', 'device_command'])
-		self.redis_client = redis_client
-		self.pubsub = ps
+		while True:
+			try:
+				logging.info("Try to connect to redis now!")
+				redis_client = redis.Redis.from_url(self.srv + "/7?socket_keepalive=true", decode_responses=True)
+				ps = redis_client.pubsub()
+				ps.subscribe(['device_app', 'device_sys', 'device_output', 'device_command'])
+				self.redis_client = redis_client
+				self.pubsub = ps
 
-		for item in ps.listen():
-			if item['type'] == 'message':
-				self.on_redis_message(item['channel'], item['data'])
+				for item in ps.listen():
+					if item['type'] == 'message':
+						self.on_redis_message(item['channel'], item['data'])
+
+			except Exception as ex:
+				logging.exception(ex)
+				time.sleep(1)
+
 
 	def on_redis_message(self, channel, msg):
 		try:
