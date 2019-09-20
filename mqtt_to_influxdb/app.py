@@ -78,8 +78,15 @@ def get_input_vt(iot_device, device, input, val):
 	if get_input_type(val) == "string":
 		return "string", val
 
-	key = iot_device + "/" + device + "/" + input
-	vt = inputs_map.get(key)
+	gw = inputs_map.get(iot_device)
+	if not gw:
+		return None, float(val)
+
+	dev = gw.get(device)
+	if not dev:
+		return None, float(val)
+
+	vt = dev.get(input)
 
 	if vt == 'int':
 		return vt, int(val)
@@ -90,15 +97,50 @@ def get_input_vt(iot_device, device, input, val):
 
 
 def make_input_map(iot_device, cfg):
+	gw = {}
 	for dev in cfg:
 		inputs = cfg[dev].get("inputs")
 		if not inputs:
-			return
+			continue
+
+		dev_map = {}
 		for it in inputs:
 			vt = it.get("vt")
 			if vt:
-				key = iot_device + "/" + dev + "/" + it.get("name")
-				inputs_map[key] = vt
+				dev_map[it.get("name")] = vt
+
+		gw[dev] = dev_map
+
+	inputs_map[iot_device] = gw
+
+
+def map_input_map_dev(iot_device, dev, props):
+	gw = inputs_map[iot_device]
+	if gw is None:
+		gw = {}
+
+	inputs = props.get("inputs")
+	if not inputs:
+		gw.pop(dev)
+		inputs_map[iot_device] = gw
+		return
+
+	dev_map = {}
+	for it in inputs:
+		vt = it.get("vt")
+		if vt:
+			dev_map[it.get("name")] = vt
+
+	gw[dev] = dev_map
+	inputs_map[iot_device] = gw
+
+
+def clear_input_map_dev(iot_device, dev):
+	gw = inputs_map[iot_device]
+	if gw is None:
+		return
+	gw.pop(dev)
+	inputs_map[iot_device] = gw
 
 
 # The callback for when the client receives a CONNACK response from the server.
@@ -121,6 +163,8 @@ def on_connect(client, userdata, flags, rc):
 	client.subscribe("+/exts_gz")
 	client.subscribe("+/devices")
 	client.subscribe("+/devices_gz")
+	client.subscribe("+/device")
+	client.subscribe("+/device_gz")
 	client.subscribe("+/status")
 	client.subscribe("+/stat")
 	client.subscribe("+/stat_gz")
@@ -212,9 +256,30 @@ def on_message(client, userdata, msg):
 		worker.append_data(name="iot_device", property="cfg", device=devid, iot=devid, timestamp=time.time(), value=data, quality=0)
 		devs = json.loads(data)
 		if not devs:
-			logging.warning('Decode DEVICE_GZ JSON Failure: %s/%s\t%s', devid, topic, data)
+			logging.warning('Decode DEVICES_GZ JSON Failure: %s/%s\t%s', devid, topic, data)
 			return
 		make_input_map(devid, devs)
+		return
+
+	if topic == 'device' or topic == 'device_gz':
+		data = msg.payload.decode('utf-8') if topic == 'device' else zlib.decompress(msg.payload).decode('utf-8')
+		logging.debug('%s/%s\t%s', devid, topic, data)
+		dev = json.loads(data)
+		if not dev:
+			logging.warning('Decode DEVICE_GZ JSON Failure: %s/%s\t%s', devid, topic, data)
+			return
+
+		action = dev.get('action')
+		dev = dev.get('sn')
+		if not action or not dev:
+			logging.warning('Invalid DEVICE data: %s/%s\t%s', devid, topic, data)
+			return
+		if action == 'add' or action == 'mod':
+			map_input_map_dev(devid, dev, dev.get('props'))
+		elif action == 'del':
+			clear_input_map_dev(devid, dev)
+		else:
+			logging.warning('Unknown Device Action!!')
 		return
 
 	if topic == 'status':

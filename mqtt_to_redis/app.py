@@ -62,6 +62,8 @@ def on_connect(client, userdata, flags, rc):
 	client.subscribe("+/exts_gz")
 	client.subscribe("+/devices")
 	client.subscribe("+/devices_gz")
+	client.subscribe('+/device')
+	client.subscribe('+/device_gz')
 	client.subscribe("+/status")
 	client.subscribe("+/event")
 
@@ -147,7 +149,7 @@ def on_message(client, userdata, msg):
 		logging.debug('%s/%s\t%s', gateid, topic, data)
 		devs = json.loads(data)
 		if not devs:
-			logging.warning('Decode DEVICE_GZ JSON Failure: %s/%s\t%s', gateid, topic, data)
+			logging.warning('Decode DEVICES_GZ JSON Failure: %s/%s\t%s', gateid, topic, data)
 			return
 
 		devkeys = redis_rel.lrange(gateid, 0, 1000)
@@ -168,6 +170,54 @@ def on_message(client, userdata, msg):
 			redis_cfg.persist(devid)
 			redis_cfg.set(devid, json.dumps(devs[devid]))
 			redis_rtdb.persist(devid)
+
+		return
+
+	if topic == 'device' or topic == 'device_gz':
+		data = msg.payload.decode('utf-8') if topic == 'device' else zlib.decompress(msg.payload).decode('utf-8')
+		logging.debug('%s/%s\t%s', gateid, topic, data)
+		dev = json.loads(data)
+		if not dev:
+			logging.warning('Decode DEVICE_GZ JSON Failure: %s/%s\t%s', gateid, topic, data)
+			return
+
+		action = dev.get('action')
+		devid = dev.get('sn')
+		if not action or not devid:
+			logging.warning('Invalid DEVICE data: %s/%s\t%s', gateid, topic, data)
+			return
+
+		if action == 'add':
+			redis_rel.lpush(gateid, devid)
+			redis_rel.persist('PARENT_{0}'.format(devid))
+			redis_rel.set('PARENT_{0}'.format(devid), gateid)
+			redis_cfg.persist(devid)
+			redis_cfg.set(devid, json.dumps(dev.get('props')))
+			redis_rtdb.persist(devid)
+		elif action == 'mod':
+			devkeys = redis_rel.lrange(gateid, 0, 1000)
+			redis_rel.ltrim(gateid, 0, -1000)
+			devkeys.remove(devid)
+			devkeys.append(devid)
+			for key in devkeys:
+				redis_rel.lpush(gateid, key)
+			redis_rel.persist('PARENT_{0}'.format(devid))
+			redis_rel.set('PARENT_{0}'.format(devid), gateid)
+			redis_cfg.persist(devid)
+			redis_cfg.set(devid, json.dumps(dev.get('props')))
+			redis_rtdb.persist(devid)
+		elif action == 'del':
+			devkeys = redis_rel.lrange(gateid, 0, 1000)
+			redis_rel.ltrim(gateid, 0, -1000)
+			devkeys.remove(devid)
+			for key in devkeys:
+				redis_rel.lpush(gateid, key)
+
+			redis_rel.expire('PARENT_{0}'.format(devid), redis_offline_expire)
+			redis_cfg.expire(devid, redis_offline_expire)
+			redis_rtdb.expire(devid, redis_offline_expire)
+		else:
+			logging.warning('Unknown Device Action!!')
 
 		return
 
