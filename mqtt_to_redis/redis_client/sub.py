@@ -36,7 +36,7 @@ def on_message(client, userdata, msg):
 		g = g.groups()
 		dev = g[0]
 		action = g[1]
-		userdata.on_mqtt_message(dev, action, msg.payload.decode('utf-8'))
+		userdata.on_mqtt_message(dev, action, msg.payload.decode('utf-8', 'surrogatepass'))
 
 
 class MQTTClient(threading.Thread):

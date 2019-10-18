@@ -34,12 +34,16 @@ redis_sts = redis.Redis.from_url(redis_srv+"/9", decode_responses=True) # device
 redis_cfg = redis.Redis.from_url(redis_srv+"/10", decode_responses=True) # device defines
 redis_rel = redis.Redis.from_url(redis_srv+"/11", decode_responses=True) # device relationship
 redis_rtdb = redis.Redis.from_url(redis_srv+"/12", decode_responses=True) # device real-time data
+redis_stat = redis.Redis.from_url(redis_srv+"/14", decode_responses=True) # device statistics data
 
 ''' Set all data be expired after device offline '''
 redis_offline_expire = 3600 * 24 * 7
 
 match_topic = re.compile(r'^([^/]+)/(.+)$')
 match_data_path = re.compile(r'^([^/]+)/(.+)$')
+match_stat_path = re.compile(r'^([^/]+)/(.+)$')
+
+worker = None 	#
 
 
 # The callback for when the client receives a CONNACK response from the server.
@@ -65,6 +69,8 @@ def on_connect(client, userdata, flags, rc):
 	client.subscribe('+/device')
 	client.subscribe('+/device_gz')
 	client.subscribe("+/status")
+	client.subscribe("+/stat")
+	client.subscribe("+/stat_gz")
 	client.subscribe("+/event")
 
 
@@ -85,9 +91,9 @@ def on_message(client, userdata, msg):
 	topic = g[1]
 
 	if topic == 'data':
-		data = json.loads(msg.payload.decode('utf-8'))
+		data = json.loads(msg.payload.decode('utf-8', 'surrogatepass'))
 		if not data:
-			logging.warning('Decode DATA JSON Failure: %s/%s\t%s', gateid, topic, msg.payload.decode('utf-8'))
+			logging.warning('Decode DATA JSON Failure: %s/%s\t%s', gateid, topic, msg.payload.decode('utf-8', 'surrogatepass'))
 			return
 		g = match_data_path.match(data[0])
 		if g and msg.retain == 0:
@@ -105,7 +111,7 @@ def on_message(client, userdata, msg):
 
 	if topic == 'data_gz':
 		try:
-			data = zlib.decompress(msg.payload).decode('utf-8')
+			data = zlib.decompress(msg.payload).decode('utf-8', 'surrogatepass')
 			data_list = json.loads(data)
 			if not data_list:
 				logging.warning('Decode DATA_GZ JSON Failure: %s/%s\t%s', gateid, topic, data)
@@ -129,7 +135,7 @@ def on_message(client, userdata, msg):
 		return
 
 	if topic == 'apps' or topic == 'apps_gz':
-		data = msg.payload.decode('utf-8') if topic == 'apps' else zlib.decompress(msg.payload).decode('utf-8')
+		data = msg.payload.decode('utf-8', 'surrogatepass') if topic == 'apps' else zlib.decompress(msg.payload).decode('utf-8', 'surrogatepass')
 		logging.debug('%s/%s\t%s', gateid, topic, data)
 		# apps = json.loads(data)
 		# redis_apps.set(gateid, json.dumps(apps))
@@ -137,7 +143,7 @@ def on_message(client, userdata, msg):
 		return
 
 	if topic == 'exts' or topic == 'exts_gz':
-		data = msg.payload.decode('utf-8') if topic == 'exts' else zlib.decompress(msg.payload).decode('utf-8')
+		data = msg.payload.decode('utf-8', 'surrogatepass') if topic == 'exts' else zlib.decompress(msg.payload).decode('utf-8', 'surrogatepass')
 		logging.debug('%s/%s\t%s', gateid, topic, data)
 		# exts = json.loads(data)
 		# redis_exts.set(gateid, json.dumps(exts))
@@ -145,7 +151,7 @@ def on_message(client, userdata, msg):
 		return
 
 	if topic == 'devices' or topic == 'devices_gz':
-		data = msg.payload.decode('utf-8') if topic == 'devices' else zlib.decompress(msg.payload).decode('utf-8')
+		data = msg.payload.decode('utf-8', 'surrogatepass') if topic == 'devices' else zlib.decompress(msg.payload).decode('utf-8', 'surrogatepass')
 		logging.debug('%s/%s\t%s', gateid, topic, data)
 		devs = json.loads(data)
 		if not devs:
@@ -161,6 +167,7 @@ def on_message(client, userdata, msg):
 				redis_rel.expire('PARENT_{0}'.format(devid), redis_offline_expire)
 				redis_cfg.expire(devid, redis_offline_expire)
 				redis_rtdb.expire(devid, redis_offline_expire)
+				redis_stat.expire(devid, redis_offline_expire)
 
 		for devid in devs:
 			redis_rel.lpush(gateid, devid)
@@ -170,11 +177,12 @@ def on_message(client, userdata, msg):
 			redis_cfg.persist(devid)
 			redis_cfg.set(devid, json.dumps(devs[devid]))
 			redis_rtdb.persist(devid)
+			redis_stat.persist(devid)
 
 		return
 
 	if topic == 'device' or topic == 'device_gz':
-		data = msg.payload.decode('utf-8') if topic == 'device' else zlib.decompress(msg.payload).decode('utf-8')
+		data = msg.payload.decode('utf-8', 'surrogatepass') if topic == 'device' else zlib.decompress(msg.payload).decode('utf-8', 'surrogatepass')
 		logging.debug('%s/%s\t%s', gateid, topic, data)
 		dev = json.loads(data)
 		if not dev:
@@ -194,6 +202,7 @@ def on_message(client, userdata, msg):
 			redis_cfg.persist(devid)
 			redis_cfg.set(devid, json.dumps(dev.get('props')))
 			redis_rtdb.persist(devid)
+			redis_stat.persist(devid)
 		elif action == 'mod':
 			devkeys = redis_rel.lrange(gateid, 0, 1000)
 			redis_rel.ltrim(gateid, 0, -1000)
@@ -206,6 +215,7 @@ def on_message(client, userdata, msg):
 			redis_cfg.persist(devid)
 			redis_cfg.set(devid, json.dumps(dev.get('props')))
 			redis_rtdb.persist(devid)
+			redis_stat.persist(devid)
 		elif action == 'del':
 			devkeys = redis_rel.lrange(gateid, 0, 1000)
 			redis_rel.ltrim(gateid, 0, -1000)
@@ -216,13 +226,14 @@ def on_message(client, userdata, msg):
 			redis_rel.expire('PARENT_{0}'.format(devid), redis_offline_expire)
 			redis_cfg.expire(devid, redis_offline_expire)
 			redis_rtdb.expire(devid, redis_offline_expire)
+			redis_stat.expire(devid, redis_offline_expire)
 		else:
 			logging.warning('Unknown Device Action!!')
 
 		return
 
 	if topic == 'status':
-		status = msg.payload.decode('utf-8')
+		status = msg.payload.decode('utf-8', 'surrogatepass')
 		redis_sts.set(gateid, status)
 		worker.update_device_status(gateid, status)
 		if status == 'OFFLINE':
@@ -246,8 +257,49 @@ def on_message(client, userdata, msg):
 
 		return
 
+	if topic == 'stat':
+		data = json.loads(msg.payload.decode('utf-8', 'surrogatepass'))
+		if not data:
+			logging.warning('Decode STAT JSON Failure: %s/%s\t%s', gateid, topic, msg.payload.decode('utf-8', 'surrogatepass'))
+			return
+		g = match_stat_path.match(data[0])
+		if g and msg.retain == 0:
+			g = g.groups()
+			# pop stat key
+			data.pop(0)
+			device_id = g[0]
+			stat = g[1]
+			redis_stat.hmset(device_id, {
+				stat: json.dumps(data)
+			})
+		return
+
+	if topic == 'stat_gz':
+		try:
+			payload = zlib.decompress(msg.payload).decode('utf-8', 'surrogatepass')
+			stat_list = json.loads(payload)
+			if not stat_list:
+				logging.warning('Decode STAT_GZ JSON Failure: %s/%s\t%s', gateid, topic, payload)
+				return
+			for d in stat_list:
+				g = match_stat_path.match(d[0])
+				if g and msg.retain == 0:
+					g = g.groups()
+					dev = g[0]
+					stat = g[1]
+					# pop stat key
+					d.pop(0)
+
+					r = redis_stat.hmset(dev, {
+						stat: json.dumps(d)
+					})
+		except Exception as ex:
+			logging.exception(ex)
+			logging.debug('Catch an exception: %s\t%d\t%d', msg.topic, msg.qos, msg.retain)
+		return
+
 	if topic == 'event':
-		event = msg.payload.decode('utf-8')
+		event = msg.payload.decode('utf-8', 'surrogatepass')
 		worker.device_event(gateid, event)
 		return
 

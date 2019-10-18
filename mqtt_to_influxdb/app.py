@@ -188,9 +188,9 @@ def on_message(client, userdata, msg):
 	topic = g[1]
 
 	if topic == 'data':
-		payload = json.loads(msg.payload.decode('utf-8'))
+		payload = json.loads(msg.payload.decode('utf-8', 'surrogatepass'))
 		if not payload:
-			logging.warning('Decode DATA JSON Failure: %s/%s\t%s', devid, topic, msg.payload.decode('utf-8'))
+			logging.warning('Decode DATA JSON Failure: %s/%s\t%s', devid, topic, msg.payload.decode('utf-8', 'surrogatepass'))
 			return
 		g = match_data_path.match(payload[0])
 		if g and msg.retain == 0:
@@ -211,7 +211,7 @@ def on_message(client, userdata, msg):
 
 	if topic == 'data_gz' or topic == 'cached_data_gz':
 		try:
-			payload = zlib.decompress(msg.payload).decode('utf-8')
+			payload = zlib.decompress(msg.payload).decode('utf-8', 'surrogatepass')
 			data_list = json.loads(payload)
 			if not data_list:
 				logging.warning('Decode DATA_GZ JSON Failure: %s/%s\t%s', devid, topic, payload)
@@ -238,19 +238,19 @@ def on_message(client, userdata, msg):
 		return
 
 	if topic == 'apps' or topic == 'apps_gz':
-		data = msg.payload.decode('utf-8') if topic == 'apps' else zlib.decompress(msg.payload).decode('utf-8')
+		data = msg.payload.decode('utf-8', 'surrogatepass') if topic == 'apps' else zlib.decompress(msg.payload).decode('utf-8', 'surrogatepass')
 		logging.debug('%s/%s\t%s', devid, topic, data)
 		worker = get_worker(devid)
 		worker.append_data(name="iot_device", property="apps", device=devid, iot=devid, timestamp=time.time(), value=data, quality=0)
 
 	if topic == 'exts' or topic == 'exts_gz':
-		data = msg.payload.decode('utf-8') if topic == 'exts' else zlib.decompress(msg.payload).decode('utf-8')
+		data = msg.payload.decode('utf-8', 'surrogatepass') if topic == 'exts' else zlib.decompress(msg.payload).decode('utf-8', 'surrogatepass')
 		logging.debug('%s/%s\t%s', devid, topic, data)
 		worker = get_worker(devid)
 		worker.append_data(name="iot_device", property="exts", device=devid, iot=devid, timestamp=time.time(), value=data, quality=0)
 
 	if topic == 'devices' or topic == 'devices_gz':
-		data = msg.payload.decode('utf-8') if topic == 'devices' else zlib.decompress(msg.payload).decode('utf-8')
+		data = msg.payload.decode('utf-8', 'surrogatepass') if topic == 'devices' else zlib.decompress(msg.payload).decode('utf-8', 'surrogatepass')
 		logging.debug('%s/%s\t%s', devid, topic, data)
 		worker = get_worker(devid)
 		worker.append_data(name="iot_device", property="cfg", device=devid, iot=devid, timestamp=time.time(), value=data, quality=0)
@@ -262,7 +262,7 @@ def on_message(client, userdata, msg):
 		return
 
 	if topic == 'device' or topic == 'device_gz':
-		data = msg.payload.decode('utf-8') if topic == 'device' else zlib.decompress(msg.payload).decode('utf-8')
+		data = msg.payload.decode('utf-8', 'surrogatepass') if topic == 'device' else zlib.decompress(msg.payload).decode('utf-8', 'surrogatepass')
 		logging.debug('%s/%s\t%s', devid, topic, data)
 		dev = json.loads(data)
 		if not dev:
@@ -285,17 +285,17 @@ def on_message(client, userdata, msg):
 	if topic == 'status':
 		# TODO: Update Quality of All Inputs when gate is offline.
 		worker = get_worker(devid)
-		#redis_sts.set(devid, msg.payload.decode('utf-8'))
-		status = msg.payload.decode('utf-8')
+		#redis_sts.set(devid, msg.payload.decode('utf-8', 'surrogatepass'))
+		status = msg.payload.decode('utf-8', 'surrogatepass')
 		if status == "ONLINE" or status == "OFFLINE":
 			val = status == "ONLINE"
 			worker.append_data(name="device_status", property="online", device=devid, iot=devid, timestamp=time.time(), value=val, quality=0)
 		return
 
 	if topic == 'stat':
-		payload = json.loads(msg.payload.decode('utf-8'))
+		payload = json.loads(msg.payload.decode('utf-8', 'surrogatepass'))
 		if not payload:
-			logging.warning('Decode STAT JSON Failure: %s/%s\t%s', devid, topic, msg.payload.decode('utf-8'))
+			logging.warning('Decode STAT JSON Failure: %s/%s\t%s', devid, topic, msg.payload.decode('utf-8', 'surrogatepass'))
 			return
 		g = match_stat_path.match(payload[0])
 		if g and msg.retain == 0:
@@ -307,7 +307,7 @@ def on_message(client, userdata, msg):
 
 	if topic == 'stat_gz':
 		try:
-			payload = zlib.decompress(msg.payload).decode('utf-8')
+			payload = zlib.decompress(msg.payload).decode('utf-8', 'surrogatepass')
 			stat_list = json.loads(payload)
 			if not stat_list:
 				logging.warning('Decode STAT_GZ JSON Failure: %s/%s\t%s', devid, topic, payload)
@@ -325,9 +325,9 @@ def on_message(client, userdata, msg):
 		return
 
 	if topic == 'event':
-		payload = json.loads(msg.payload.decode('utf-8'))
+		payload = json.loads(msg.payload.decode('utf-8', 'surrogatepass'))
 		if not payload:
-			logging.warning('Decode EVENT JSON Failure: %s/%s\t%s', devid, topic, msg.payload.decode('utf-8'))
+			logging.warning('Decode EVENT JSON Failure: %s/%s\t%s', devid, topic, msg.payload.decode('utf-8', 'surrogatepass'))
 			return
 		if msg.retain == 0:
 			worker = get_worker(devid)
