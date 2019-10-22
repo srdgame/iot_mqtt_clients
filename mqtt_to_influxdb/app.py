@@ -188,7 +188,12 @@ def on_message(client, userdata, msg):
 	topic = g[1]
 
 	if topic == 'data':
-		payload = json.loads(msg.payload.decode('utf-8', 'surrogatepass'))
+		try:
+			payload = json.loads(msg.payload.decode('utf-8', 'surrogatepass'))
+		except Exception as ex:
+			logging.warning('Decode String Failure: %s/%s\t%s', devid, topic, msg.payload)
+			logging.exception(ex)
+			return
 		if not payload:
 			logging.warning('Decode DATA JSON Failure: %s/%s\t%s', devid, topic, msg.payload.decode('utf-8', 'surrogatepass'))
 			return
