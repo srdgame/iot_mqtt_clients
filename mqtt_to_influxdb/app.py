@@ -346,7 +346,9 @@ def on_message(client, userdata, msg):
 if __name__ == '__main__':
 
 	client = mqtt.Client(client_id="SYS_MQTT_TO_INFLUXDB")
-	client.username_pw_set("root", "bXF0dF9pb3RfYWRtaW4K")
+	mqtt_user = config.get('mqtt', 'user', fallback="root")
+	mqtt_password = config.get('mqtt', 'password', fallback="bXF0dF9pb3RfYWRtaW4K")
+	client.username_pw_set(mqtt_user, mqtt_password)
 	client.on_connect = on_connect
 	client.on_disconnect = on_disconnect
 	client.on_message = on_message

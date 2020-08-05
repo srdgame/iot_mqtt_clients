@@ -77,7 +77,9 @@ if __name__ == '__main__':
 
 	# Listen on MQTT forwarding real-time data into redis, and forwarding configuration to frappe.
 	client = mqtt.Client(client_id="SYS_MQTT_SUB_CLIENT")
-	client.username_pw_set("root", "bXF0dF9pb3RfYWRtaW4K")
+	mqtt_user = config.get('mqtt', 'user', fallback="root")
+	mqtt_password = config.get('mqtt', 'password', fallback="bXF0dF9pb3RfYWRtaW4K")
+	client.username_pw_set(mqtt_user, mqtt_password)
 	#client.username_pw_set("changch84@163.com", "pa88word")
 	client.on_connect = on_connect
 	client.on_disconnect = on_disconnect

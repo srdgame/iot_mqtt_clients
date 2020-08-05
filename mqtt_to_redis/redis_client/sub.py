@@ -40,9 +40,11 @@ def on_message(client, userdata, msg):
 
 
 class MQTTClient(threading.Thread):
-	def __init__(self, client, host="localhost", port=1883, keepalive=60):
+	def __init__(self, client, user, password, host="localhost", port=1883, keepalive=60):
 		threading.Thread.__init__(self)
 		self.client = client
+		self.user = user
+		self.password = password
 		self.host = host
 		self.port = port
 		self.keepalive = keepalive
@@ -50,7 +52,7 @@ class MQTTClient(threading.Thread):
 	def run(self):
 		try:
 			mqttc = mqtt.Client(userdata=self.client, client_id="SYS_MQTT_TO_REDIS.SUB")
-			mqttc.username_pw_set("root", "bXF0dF9pb3RfYWRtaW4K")
+			mqttc.username_pw_set(self.user, self.password)
 			self.mqttc = mqttc
 
 			mqttc.on_connect = on_connect
@@ -79,7 +81,9 @@ class SubClient(threading.Thread):
 		host = self.config.get('mqtt', 'host', fallback='127.0.0.1')
 		port = self.config.getint('mqtt', 'port', fallback=1883)
 		keepalive = self.config.getint('mqtt', 'keepalive', fallback=60)
-		mqttc = MQTTClient(self, host=host, port=port, keepalive=keepalive)
+		user = self.config.get('mqtt', 'user', fallback="root")
+		password = self.config.get('mqtt', 'password', fallback="bXF0dF9pb3RfYWRtaW4K")
+		mqttc = MQTTClient(self, user=user, password=password, host=host, port=port, keepalive=keepalive)
 		mqttc.start()
 		self.mqttc = mqttc
 
