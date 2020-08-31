@@ -33,6 +33,7 @@ config.read('../config.ini')
 
 redis_srv = config.get('redis', 'url', fallback='redis://127.0.0.1:6379')
 redis_db = redis.Redis.from_url(redis_srv + "/8", decode_responses=True) # device influxdb database
+redis_cfg = redis.Redis.from_url(redis_srv+"/10", decode_responses=True) # device defines
 
 workers = {}
 device_map = {}
@@ -62,25 +63,26 @@ def get_worker(iot_device):
 	return worker
 
 
-def get_input_type(val):
-	if isinstance(val, int):
-		return "int"
-	elif isinstance(val, float):
-		return "float"
-	else:
-		return "string"
-
-
+# Later using standalone redis for cache those inputs
 inputs_map = {}
 
 
-def get_input_vt(iot_device, device, input, val):
-	if get_input_type(val) == "string":
-		return "string", val
-
+def get_input_map_device(iot_device):
 	gw = inputs_map.get(iot_device)
+	if gw:
+		return gw
+	# TODO: Get the device information from redis
+	cfg = redis_cfg.get(iot_device)
+	map_input_map_dev(iot_device, cfg)
+
+
+def get_input_vt(iot_device, device, input, val):
+	gw = get_input_map_device(iot_device)
 	if not gw:
-		return None, float(val)
+		if isinstance(val, int) and not isinstance(val, float):
+			return "string", str(val)
+		else:
+			return None, float(val)
 
 	dev = gw.get(device)
 	if not dev:
