@@ -72,6 +72,11 @@ def get_input_map_device(iot_device, device):
 	if gw and gw.get(device):
 		return gw
 	cfg = redis_cfg.get(device)
+	if not cfg:
+		return None
+	cfg = json.loads(cfg)
+	if not cfg:
+		return None
 	map_input_map_dev(iot_device, device, cfg)
 	return inputs_map[iot_device]
 
@@ -117,7 +122,7 @@ def make_input_map(iot_device, cfg):
 
 
 def map_input_map_dev(iot_device, dev, props):
-	gw = inputs_map[iot_device]
+	gw = inputs_map.get(iot_device)
 	if gw is None:
 		gw = {}
 
@@ -138,7 +143,7 @@ def map_input_map_dev(iot_device, dev, props):
 
 
 def clear_input_map_dev(iot_device, dev):
-	gw = inputs_map[iot_device]
+	gw = inputs_map.get(iot_device)
 	if gw is None:
 		return
 	gw.pop(dev)
