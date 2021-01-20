@@ -128,7 +128,8 @@ def map_input_map_dev(iot_device, dev, props):
 
 	inputs = props.get("inputs")
 	if not inputs:
-		gw.pop(dev)
+		if gw.get(dev):
+			gw.pop(dev)
 		inputs_map[iot_device] = gw
 		return
 
