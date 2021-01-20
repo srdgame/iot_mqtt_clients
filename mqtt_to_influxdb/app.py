@@ -67,17 +67,17 @@ def get_worker(iot_device):
 inputs_map = {}
 
 
-def get_input_map_device(iot_device):
+def get_input_map_device(iot_device, device):
 	gw = inputs_map.get(iot_device)
-	if gw:
+	if gw and gw.get(device):
 		return gw
-	# TODO: Get the device information from redis
-	cfg = redis_cfg.get(iot_device)
-	map_input_map_dev(iot_device, cfg)
+	cfg = redis_cfg.get(device)
+	map_input_map_dev(iot_device, device, cfg)
+	return inputs_map[iot_device]
 
 
 def get_input_vt(iot_device, device, input, val):
-	gw = get_input_map_device(iot_device)
+	gw = get_input_map_device(iot_device, device)
 	if not gw:
 		if isinstance(val, int) and not isinstance(val, float):
 			return "string", str(val)
