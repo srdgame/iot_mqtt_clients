@@ -282,14 +282,14 @@ def on_message(client, userdata, msg):
 			return
 
 		action = dev.get('action')
-		dev = dev.get('sn')
-		if not action or not dev:
+		dev_sn = dev.get('sn')
+		if not action or not dev_sn:
 			logging.warning('Invalid DEVICE data: %s/%s\t%s', devid, topic, data)
 			return
 		if action == 'add' or action == 'mod':
-			map_input_map_dev(devid, dev, dev.get('props'))
+			map_input_map_dev(devid, dev_sn, dev.get('props'))
 		elif action == 'del':
-			clear_input_map_dev(devid, dev)
+			clear_input_map_dev(devid, dev_sn)
 		else:
 			logging.warning('Unknown Device Action!!')
 		return
